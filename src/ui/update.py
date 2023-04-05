@@ -76,6 +76,9 @@ def team_difference(source_team_id):
     global uploaded_annotated_images, uploaded_tagged_images
     uploaded_annotated_images = uploaded_tagged_images = 0
 
+    annotated_images_text.text = f"Annotated images: {annotated_images}"
+    tagged_images_text.text = f"Tagged images: {tagged_images}"
+
     annotated_images_text.show()
     tagged_images_text.show()
 
