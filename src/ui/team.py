@@ -63,8 +63,11 @@ def load_data():
 
 @refresh_button.click
 def refresh_data():
-    load_data()
     refresh_button.hide()
+    load_button.show()
+    load_button.loading = True
+    load_data()
+    load_button.loading = False
 
 
 @change_button.click
