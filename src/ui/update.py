@@ -30,15 +30,15 @@ tagged_images_text.hide()
 difference_text.hide()
 uploaded_text.hide()
 
-upload_button = Button("Upload data")
+upload_button = Button("Update data")
 upload_button.hide()
 
 progresses = {level: Progress() for level in g.LEVELS}
 progresses_container = Container(widgets=list(progresses.values()))
 
-upload_card = Card(
-    title="3️⃣ Compare and upload",
-    description="Compare and upload data between source and target instances.",
+card = Card(
+    title="3️⃣ Progress status",
+    description="Progress of comparison and upload of data to target instance.",
     content=Container(
         [
             difference_text,
@@ -46,20 +46,13 @@ upload_card = Card(
             upload_button,
             annotated_images_text,
             tagged_images_text,
+            progresses_container,
         ]
     ),
     lock_message="Select Team on step 2️⃣ and wait until comparison is finished.",
 )
 
-status_card = Card(
-    title="4️⃣ Status",
-    description="Progress status of data comparison and upload.",
-    content=progresses_container,
-    lock_message="Select Team on step 2️⃣ and wait until comparison is finished.",
-)
-
-upload_card.lock()
-status_card.lock()
+card.lock()
 
 
 def measure_time(function: callable) -> callable:
@@ -80,6 +73,9 @@ def measure_time(function: callable) -> callable:
 def team_difference(source_team_id):
     global annotated_images, tagged_images
     annotated_images = tagged_images = 0
+
+    global uploaded_annotated_images, uploaded_tagged_images
+    uploaded_annotated_images = uploaded_tagged_images = 0
 
     annotated_images_text.show()
     tagged_images_text.show()

@@ -25,7 +25,7 @@ TARGET_TEAM_NAME = "Assets2"
 
 LEVELS = ["team", "workspace", "project", "image"]
 TAG = "inference"
-BATCH_SIZE = 10
+BATCH_SIZE = 100
 
 
 def key_from_file() -> Optional[str]:

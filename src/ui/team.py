@@ -1,12 +1,6 @@
 import supervisely as sly
 
-from supervisely.app.widgets import (
-    Container,
-    Card,
-    SelectTeam,
-    Button,
-    Text,
-)
+from supervisely.app.widgets import Container, Card, SelectTeam, Button, Text, Flexbox
 
 import src.globals as g
 import src.ui.update as update
@@ -17,17 +11,17 @@ warning_message.hide()
 # Field with team selector.
 team_select = SelectTeam(default_id=g.TEAM_ID, show_label=False)
 
-load_button = Button("Load data")
+load_button = Button("Compare data")
 change_button = Button(
     "Change source", icon="zmdi zmdi-swap-vertical-circle", button_type="warning"
 )
 change_button.hide()
 
-buttons_container = Container([load_button, change_button])
+buttons_container = Container([load_button, change_button, update.upload_button])
 
 card = Card(
-    title="2️⃣ Load data",
-    description="Select the source team and load data.",
+    title="2️⃣ Compare and update",
+    description="Select the source team, compare instances and update the data.",
     content=Container(
         [
             team_select,
@@ -54,8 +48,7 @@ def load_data():
     sly.logger.debug(f"Team level is selected. Team ID: {source_team_id}.")
     team_select.disable()
 
-    update.upload_card.unlock()
-    update.status_card.unlock()
+    update.card.unlock()
 
     update.team_difference(source_team_id)
 
@@ -70,5 +63,4 @@ def change_source():
     load_button.show()
     team_select.enable()
     change_button.hide()
-    update.upload_card.lock()
-    update.status_card.lock()
+    update.card.lock()

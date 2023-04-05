@@ -6,8 +6,6 @@ import src.ui.keys as keys
 import src.ui.team as team
 import src.ui.update as update
 
-layout = Container(
-    widgets=[keys.card, team.card, update.upload_card, update.status_card]
-)
+layout = Container(widgets=[keys.card, team.card, update.card])
 
 app = sly.Application(layout=layout)
