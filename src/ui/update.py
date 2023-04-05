@@ -487,8 +487,8 @@ def upload_images():
     team.card.unlock()
 
     uploaded_text.text = (
-        f"Successfully uploaded {len(uploaded_annotated_images)} annotated images "
-        f"and {len(uploaded_tagged_images)} tagged images."
+        f"Successfully uploaded {uploaded_annotated_images} annotated images "
+        f"and {uploaded_tagged_images} tagged images."
     )
 
 
