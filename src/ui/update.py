@@ -206,9 +206,19 @@ def project_difference(source_project, target_workspace_id):
         sly.logger.debug(
             f"Project {project_name} is not found in target workspace. Will create it."
         )
-        target_project_id = k.target_api.project.create(
-            target_workspace_id, project_name
-        ).id
+
+        try:
+            target_project_id = k.target_api.project.create(
+                target_workspace_id, project_name
+            ).id
+        except Exception as error:
+            sly.logger.error(f"Error while creating project {project_name}: {error}.")
+            sly.logger.info(
+                "This error is expected and should not impact on the result."
+            )
+            target_project_id = k.target_api.project.get_info_by_name(
+                target_workspace_id, project_name
+            ).id
         sly.logger.debug(
             f"Project {project_name} is created in target workspace with ID {target_project_id}."
         )
