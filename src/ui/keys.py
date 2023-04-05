@@ -43,7 +43,9 @@ def connect_to_target():
     try:
         global target_api
         target_api = sly.Api(
-            server_address=g.TARGET_SERVER_ADDRESS, token=target_api_key
+            server_address=g.TARGET_SERVER_ADDRESS,
+            token=target_api_key,
+            ignore_task_id=True,
         )
         global target_team_id
         target_api.team.get_info_by_name(g.TARGET_TEAM_NAME)
