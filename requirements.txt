@@ -1,0 +1,5 @@
+supervisely==6.70.13
+# Library for Flickr API.
+
+# code formatter
+black

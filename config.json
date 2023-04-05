@@ -1,0 +1,18 @@
+{
+  "name": "Source-Target Transfer App",
+  "type": "app",
+  "version": "2.0.0",
+  "categories": ["images"],
+  "description": "Transfers images from source to target instance.",
+  "docker_image": "supervisely/base-py-sdk:6.70.13",
+  "entrypoint": "python -m uvicorn src.main:app --host 0.0.0.0 --port 8000",
+  "port": 8000,
+  "task_location": "workspace_tasks",
+  "icon": "",
+  "headless": false,
+  "icon_cover": true,
+  "context_menu": {
+    "target": ["files_file", "ecosystem"]
+  },
+  "poster": ""
+}
