@@ -82,6 +82,8 @@ def team_difference(source_team_id):
     difference_text.hide()
     uploaded_text.hide()
 
+    upload_button.enable()
+
     team_differences = defaultdict(list)
 
     team_name = "Assets2"
@@ -344,12 +346,12 @@ def filter_images(new_images, source_dataset):
 def upload_images():
     sly.logger.debug("Starting upload of images.")
 
-    upload_button.text = "Uploading..."
+    upload_button.text = "Updating..."
     uploaded_text.hide()
 
     import src.ui.team as team
 
-    team.card._lock_message = "Uploading images..."
+    team.card._lock_message = "Updating images..."
     team.card.lock()
 
     global team_differences_path
@@ -474,7 +476,8 @@ def upload_images():
         sly.logger.debug(f"Finished uploading projects in workspace {workspace_name}.")
     sly.logger.debug("Finished uploading images.")
 
-    upload_button.text = "Upload data"
+    upload_button.text = "Update data"
+    upload_button.disable()
 
     team.card.lock_message = (
         "Enter the Target API key and check the connection on step 1️⃣."

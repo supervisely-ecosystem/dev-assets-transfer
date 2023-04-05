@@ -12,12 +12,15 @@ warning_message.hide()
 team_select = SelectTeam(default_id=g.TEAM_ID)
 
 load_button = Button("Compare data")
-change_button = Button(
-    "Change source", icon="zmdi zmdi-swap-vertical-circle", button_type="warning"
-)
+change_button = Button("Change source", icon="zmdi zmdi-swap-vertical-circle")
 change_button.hide()
 
-buttons_flexbox = Flexbox([load_button, change_button, update.upload_button])
+refresh_button = Button("Refresh", icon="zmdi zmdi-refresh-alt", button_type="success")
+refresh_button.hide()
+
+buttons_flexbox = Flexbox(
+    [load_button, change_button, refresh_button, update.upload_button]
+)
 
 card = Card(
     title="2️⃣ Compare and update",
@@ -38,7 +41,7 @@ card.lock()
 @load_button.click
 def load_data():
     warning_message.hide()
-    load_button.text = "Loading..."
+    load_button.text = "Comparing..."
 
     source_team_id = team_select.get_selected_id()
     if not source_team_id:
@@ -52,9 +55,16 @@ def load_data():
 
     update.team_difference(source_team_id)
 
-    load_button.text = "Load data"
+    load_button.text = "Compare data"
     load_button.hide()
     change_button.show()
+    refresh_button.show()
+
+
+@refresh_button.click
+def refresh_data():
+    load_data()
+    refresh_button.hide()
 
 
 @change_button.click
