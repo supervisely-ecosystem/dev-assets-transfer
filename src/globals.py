@@ -20,7 +20,7 @@ source_api: sly.Api = sly.Api.from_env()
 
 TEAM_ID = sly.io.env.team_id()
 
-TARGET_SERVER_ADDRESS = "localhost"
+TARGET_SERVER_ADDRESS = "https://dev.supervise.ly"
 TARGET_TEAM_NAME = "Assets2"
 
 LEVELS = ["team", "workspace", "project", "image"]
