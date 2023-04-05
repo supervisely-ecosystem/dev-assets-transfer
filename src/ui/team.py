@@ -65,8 +65,6 @@ def load_data():
 def refresh_data():
     refresh_button.hide()
     change_button.hide()
-    update.upload_button.hide()
-    update.upload_button.disable()
     load_button.show()
     load_button.loading = True
     load_data()

@@ -82,6 +82,8 @@ def team_difference(source_team_id):
     difference_text.hide()
     uploaded_text.hide()
 
+    upload_button.hide()
+
     team_differences = defaultdict(list)
 
     team_name = "Assets2"
@@ -131,7 +133,6 @@ def team_difference(source_team_id):
     annotated_images_text.hide()
     tagged_images_text.hide()
     upload_button.show()
-    upload_button.enable()
 
     difference_text.text = f"Found {annotated_images} new annotated images and {tagged_images} new tagged images."
     difference_text.show()
@@ -476,7 +477,7 @@ def upload_images():
     sly.logger.debug("Finished uploading images.")
 
     upload_button.text = "Update data"
-    upload_button.disable()
+    upload_button.hide()
 
     team.card.lock_message = (
         "Enter the Target API key and check the connection on step 1️⃣."
