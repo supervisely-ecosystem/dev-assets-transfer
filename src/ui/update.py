@@ -43,7 +43,6 @@ card = Card(
         [
             difference_text,
             uploaded_text,
-            upload_button,
             annotated_images_text,
             tagged_images_text,
             progresses_container,

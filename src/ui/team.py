@@ -9,7 +9,7 @@ warning_message = Text(status="warning")
 warning_message.hide()
 
 # Field with team selector.
-team_select = SelectTeam(default_id=g.TEAM_ID, show_label=False)
+team_select = SelectTeam(default_id=g.TEAM_ID)
 
 load_button = Button("Compare data")
 change_button = Button(
@@ -17,7 +17,7 @@ change_button = Button(
 )
 change_button.hide()
 
-buttons_container = Container([load_button, change_button, update.upload_button])
+buttons_flexbox = Flexbox([load_button, change_button, update.upload_button])
 
 card = Card(
     title="2️⃣ Compare and update",
@@ -25,7 +25,7 @@ card = Card(
     content=Container(
         [
             team_select,
-            buttons_container,
+            buttons_flexbox,
             warning_message,
         ],
         direction="vertical",
