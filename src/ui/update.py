@@ -490,6 +490,7 @@ def upload_images():
         f"Successfully uploaded {uploaded_annotated_images} annotated images "
         f"and {uploaded_tagged_images} tagged images."
     )
+    uploaded_text.show()
 
 
 @measure_time
