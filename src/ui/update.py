@@ -387,8 +387,12 @@ def upload_images():
                             f"Source dataset ID: {source_dataset_id}. Target dataset ID: {target_dataset_id}."
                         )
 
-                        annotated_images = get_image_data(dataset["annotated_images"])
-                        tagged_images = get_image_data(dataset["tagged_images"])
+                        annotated_images = get_image_data(
+                            dataset["annotated_images"], dataset_name
+                        )
+                        tagged_images = get_image_data(
+                            dataset["tagged_images"], dataset_name
+                        )
 
                         if annotated_images is None or tagged_images is None:
                             sly.logger.error(
@@ -461,6 +465,12 @@ def upload_images():
                         )
 
                         pr_pbar.update(1)
+
+                        rmtree(os.path.join(g.IMAGES_DIR, dataset_name))
+                        sly.logger.debug(
+                            f"Removed directory {os.path.join(g.IMAGES_DIR, dataset_name)} after uploading images."
+                        )
+
                     sly.logger.debug(
                         f"Finished uploading datasets in project {project_name}."
                     )
@@ -595,15 +605,11 @@ def upload_images_with_annotations(
         f"Uploaded {len(annotations)} annotations to dataset {dataset_name}."
     )
 
-    rmtree(g.IMAGES_DIR)
-    os.makedirs(g.IMAGES_DIR, exist_ok=True)
-    sly.logger.debug(f"Removed directory {g.IMAGES_DIR} and created it again.")
-
     return len(uploaded_image_ids)
 
 
 @measure_time
-def get_image_data(images):
+def get_image_data(images, dataset_name):
     image_ids = [image[g.INDICES["images_ids"]] for image in images]
     image_names = [image[g.INDICES["image_names"]] for image in images]
     image_metas = [image[g.INDICES["image_metas"]] for image in images]
@@ -623,7 +629,11 @@ def get_image_data(images):
         )
         return
 
-    paths = [os.path.join(g.IMAGES_DIR, image_name) for image_name in image_names]
+    paths = [
+        os.path.join(g.IMAGES_DIR, dataset_name, image_name)
+        for image_name in image_names
+    ]
+    os.makedirs(os.path.join(g.IMAGES_DIR, dataset_name), exist_ok=True)
 
     ImagesData = namedtuple("ImagesData", ["ids", "names", "paths", "metas"])
     images_data = ImagesData(image_ids, image_names, paths, image_metas)
