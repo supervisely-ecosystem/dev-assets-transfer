@@ -12,6 +12,8 @@ IMAGES_DIR = os.path.join(TMP_DIR, "images")
 os.makedirs(TMP_DIR, exist_ok=True)
 os.makedirs(IMAGES_DIR, exist_ok=True)
 
+TEAM_NAME = "primitives"
+
 INDICES = {"images_ids": 0, "image_names": 1, "image_metas": 13}
 
 load_dotenv("local.env")

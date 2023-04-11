@@ -89,7 +89,8 @@ def team_difference(source_team_id):
 
     team_differences = defaultdict(list)
 
-    team_name = g.source_api.team.get_info_by_id(source_team_id).name
+    team_name = g.TEAM_NAME
+    # team_name = g.source_api.team.get_info_by_id(source_team_id).name
     sly.logger.debug(f"Readed team name as {team_name}.")
     target_team = k.target_api.team.get_info_by_name(team_name)
 
