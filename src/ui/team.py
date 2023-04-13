@@ -74,6 +74,7 @@ def refresh_data():
 @change_button.click
 def change_source():
     warning_message.hide()
+    refresh_button.hide()
     load_button.show()
     team_select.enable()
     change_button.hide()
