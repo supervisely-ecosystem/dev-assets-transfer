@@ -89,7 +89,7 @@ def team_difference(source_team_id):
 
     team_differences = defaultdict(list)
 
-    team_name = g.TEAM_NAME
+    team_name = g.TARGET_TEAM_NAME
     # team_name = g.source_api.team.get_info_by_id(source_team_id).name
     sly.logger.debug(f"Readed team name as {team_name}.")
     target_team = k.target_api.team.get_info_by_name(team_name)
@@ -619,6 +619,10 @@ def get_image_data(images, dataset_name):
 
     sly.logger.debug(f"Readed {len(image_ids)} image IDs and names.")
 
+    image_metas = normalize_image_metadata(image_metas)
+
+    sly.logger.debug(f"Normalized {len(image_metas)} image metas.")
+
     if len(image_ids) == len(image_names) == len(image_metas):
         sly.logger.debug("All three lists have the same length.")
     else:
@@ -642,3 +646,32 @@ def get_image_data(images, dataset_name):
     images_data = ImagesData(image_ids, image_names, paths, image_metas)
 
     return images_data
+
+
+@measure_time
+def normalize_image_metadata(image_metas):
+    # TARGET_METADATA_FIELDS = ["URL", "License", "Author"]
+    # SOURCE_URL_FIELDS = ["Flickr image URL", "Pexels image URL", "Source URL"]
+    # SOURCE_AUTHOR_FIELDS = ["Flickr owner id", "Photographer name"]
+    # SOURCE_LICENSE_FIELDS = ["License", "license", None]
+
+    new_image_metas = []
+
+    for image_meta in image_metas:
+        new_image_meta = {}
+        new_image_meta["URL"] = (
+            image_meta.get("Flickr image URL")
+            or image_meta.get("Pexels image URL")
+            or image_meta.get("Source URL")
+        )
+        new_image_meta["Author"] = image_meta.get("Flickr owner id") or image_meta.get(
+            "Photographer name"
+        )
+
+        new_image_meta["License"] = (
+            image_meta.get("License") or image_meta.get("license") or "Pexels license"
+        )
+
+        new_image_metas.append(new_image_meta)
+
+    return new_image_metas

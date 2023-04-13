@@ -12,8 +12,6 @@ IMAGES_DIR = os.path.join(TMP_DIR, "images")
 os.makedirs(TMP_DIR, exist_ok=True)
 os.makedirs(IMAGES_DIR, exist_ok=True)
 
-TEAM_NAME = "primitives"
-
 INDICES = {"images_ids": 0, "image_names": 1, "image_metas": 13}
 
 load_dotenv("local.env")
@@ -23,7 +21,7 @@ source_api: sly.Api = sly.Api.from_env()
 TEAM_ID = sly.io.env.team_id()
 
 TARGET_SERVER_ADDRESS = "https://assets.supervise.ly/"
-TARGET_TEAM_NAME = "Assets2"
+TARGET_TEAM_NAME = "primitives"
 
 LEVELS = ["team", "workspace", "project", "image"]
 TAG = "inference"
