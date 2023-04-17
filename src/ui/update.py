@@ -16,7 +16,7 @@ annotated_images_text = Text(
     f"Annotated images: {g.STATE.annotated_images}", status="info"
 )
 tagged_images_text = Text(f"Tagged images: {g.STATE.tagged_images}", status="info")
-difference_text = Text(status="success")
+difference_text = Text(status="info")
 uploaded_text = Text(status="success")
 
 annotated_images_text.hide()
@@ -204,18 +204,18 @@ def project_difference(source_project, target_workspace_id):
     sly.logger.debug(
         f"Found {len(source_datasets)} datasets in source project, starting dataset comparison."
     )
-    progresses["project"].show()
+    # progresses["project"].show()
 
-    with progresses["project"](
-        message=f"Comparing datasets in project {source_project.name}...",
-        total=len(source_datasets),
-    ) as pbar:
-        for dataset in source_datasets:
-            if g.STATE.continue_process:
-                project_differences[dataset.name] = dataset_difference(
-                    dataset, target_project_id
-                )
-                pbar.update(1)
+    # with progresses["project"](
+    #    message=f"Comparing datasets in project {source_project.name}...",
+    #    total=len(source_datasets),
+    # ) as pbar:
+    for dataset in source_datasets:
+        if g.STATE.continue_process:
+            project_differences[dataset.name] = dataset_difference(
+                dataset, target_project_id
+            )
+            # pbar.update(1)
 
     sly.logger.debug("Finished datasets comparison.")
 
@@ -366,117 +366,111 @@ def upload_images():
         with progresses["workspace"](
             message=f"Uploading projects in workspace {workspace_name}...",
             total=len(projects),
-        ) as ws_pbar:
+        ) as pbar:
             for project_name, datasets in projects.items():
                 sly.logger.debug(f"Working on a project {project_name}.")
 
-                progresses["project"].show()
+                # progresses["project"].show()
 
-                with progresses["project"](
-                    message=f"Uploading datasets in project {project_name}...",
-                    total=len(datasets),
-                ) as pr_pbar:
-                    for dataset_name, dataset in datasets.items():
-                        sly.logger.debug(f"Working on a dataset {dataset_name}.")
+                # with progresses["project"](
+                #     message=f"Uploading datasets in project {project_name}...",
+                #     total=len(datasets),
+                # ) as pr_pbar:
+                for dataset_name, dataset in datasets.items():
+                    sly.logger.debug(f"Working on a dataset {dataset_name}.")
 
-                        source_dataset_id = dataset["source"][0]
-                        target_dataset_id = dataset["target"][0]
+                    source_dataset_id = dataset["source"][0]
+                    target_dataset_id = dataset["target"][0]
 
-                        sly.logger.debug(
-                            f"Source dataset ID: {source_dataset_id}. Target dataset ID: {target_dataset_id}."
+                    sly.logger.debug(
+                        f"Source dataset ID: {source_dataset_id}. Target dataset ID: {target_dataset_id}."
+                    )
+
+                    annotated_images = get_image_data(
+                        dataset["annotated_images"], dataset_name
+                    )
+                    tagged_images = get_image_data(
+                        dataset["tagged_images"], dataset_name
+                    )
+
+                    if annotated_images is None or tagged_images is None:
+                        sly.logger.error(
+                            f"Failed to get images data for dataset {dataset_name}."
                         )
+                        continue
 
-                        annotated_images = get_image_data(
-                            dataset["annotated_images"], dataset_name
-                        )
-                        tagged_images = get_image_data(
-                            dataset["tagged_images"], dataset_name
-                        )
+                    download_images(annotated_images, source_dataset_id, dataset_name)
 
-                        if annotated_images is None or tagged_images is None:
-                            sly.logger.error(
-                                f"Failed to get images data for dataset {dataset_name}."
-                            )
-                            continue
+                    sly.logger.debug(
+                        f"Finished downloading annotated images for dataset {dataset_name}."
+                    )
 
-                        download_images(
-                            annotated_images, source_dataset_id, dataset_name
-                        )
+                    download_images(tagged_images, source_dataset_id, dataset_name)
 
-                        sly.logger.debug(
-                            f"Finished downloading annotated images for dataset {dataset_name}."
-                        )
+                    sly.logger.debug(
+                        f"Finished downloading tagged images for dataset {dataset_name}."
+                    )
 
-                        download_images(tagged_images, source_dataset_id, dataset_name)
+                    project_meta = update_project_meta(
+                        source_dataset_id, target_dataset_id
+                    )
 
-                        sly.logger.debug(
-                            f"Finished downloading tagged images for dataset {dataset_name}."
-                        )
+                    sly.logger.debug("Retrieved and updated project meta.")
 
-                        project_meta = update_project_meta(
-                            source_dataset_id, target_dataset_id
-                        )
+                    annotated_annotations = download_annotations(
+                        source_dataset_id, annotated_images.ids, project_meta
+                    )
 
-                        sly.logger.debug("Retrieved and updated project meta.")
+                    sly.logger.debug(
+                        f"Downloaded {len(annotated_annotations)} annotated annotations."
+                    )
 
-                        annotated_annotations = download_annotations(
-                            source_dataset_id, annotated_images.ids, project_meta
-                        )
+                    tagged_annotations = download_annotations(
+                        source_dataset_id, tagged_images.ids, project_meta
+                    )
 
-                        sly.logger.debug(
-                            f"Downloaded {len(annotated_annotations)} annotated annotations."
-                        )
+                    sly.logger.debug(
+                        f"Downloaded {len(tagged_annotations)} tagged annotations."
+                    )
 
-                        tagged_annotations = download_annotations(
-                            source_dataset_id, tagged_images.ids, project_meta
-                        )
+                    g.STATE.uploaded_annotated_images += upload_images_with_annotations(
+                        annotated_images,
+                        target_dataset_id,
+                        dataset_name,
+                        annotated_annotations,
+                    )
 
-                        sly.logger.debug(
-                            f"Downloaded {len(tagged_annotations)} tagged annotations."
-                        )
+                    sly.logger.debug(
+                        f"Uploaded annotated images with annotations to dataset {dataset_name}."
+                    )
 
-                        g.STATE.uploaded_annotated_images += (
-                            upload_images_with_annotations(
-                                annotated_images,
-                                target_dataset_id,
-                                dataset_name,
-                                annotated_annotations,
-                            )
-                        )
+                    g.STATE.uploaded_tagged_images += upload_images_with_annotations(
+                        tagged_images,
+                        target_dataset_id,
+                        dataset_name,
+                        tagged_annotations,
+                    )
 
-                        sly.logger.debug(
-                            f"Uploaded annotated images with annotations to dataset {dataset_name}."
-                        )
+                    sly.logger.debug(
+                        f"Uploaded tagged images with annotations to dataset {dataset_name}."
+                    )
 
-                        g.STATE.uploaded_tagged_images += (
-                            upload_images_with_annotations(
-                                tagged_images,
-                                target_dataset_id,
-                                dataset_name,
-                                tagged_annotations,
-                            )
-                        )
+                    sly.logger.debug(
+                        f"Finished uploading images for dataset {dataset_name}."
+                    )
 
-                        sly.logger.debug(
-                            f"Uploaded tagged images with annotations to dataset {dataset_name}."
-                        )
+                    # pr_pbar.update(1)
 
-                        sly.logger.debug(
-                            f"Finished uploading images for dataset {dataset_name}."
-                        )
-
-                        pr_pbar.update(1)
-
-                        rmtree(os.path.join(g.IMAGES_DIR, dataset_name))
-                        sly.logger.debug(
-                            f"Removed directory {os.path.join(g.IMAGES_DIR, dataset_name)} after uploading images."
-                        )
+                    rmtree(os.path.join(g.IMAGES_DIR, dataset_name))
+                    sly.logger.debug(
+                        f"Removed directory {os.path.join(g.IMAGES_DIR, dataset_name)} after uploading images."
+                    )
 
                     sly.logger.debug(
                         f"Finished uploading datasets in project {project_name}."
                     )
 
-                ws_pbar.update(1)
+                pbar.update(1)
         sly.logger.debug(f"Finished uploading projects in workspace {workspace_name}.")
     sly.logger.debug("Finished uploading images.")
 

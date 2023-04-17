@@ -30,7 +30,10 @@ TEAM_ID = sly.io.env.team_id()
 TARGET_TEAM_NAME = "primitives"
 DIFFERENCES_JSON = os.path.join(TMP_DIR, "team_differences.json")
 
-LEVELS = ["workspace", "project"]
+LEVELS = [
+    "workspace",
+    # "project",
+]
 TAG = "inference"
 BATCH_SIZE = 100
 
