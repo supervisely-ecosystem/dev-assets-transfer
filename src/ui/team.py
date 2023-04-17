@@ -47,8 +47,8 @@ buttons_flexbox = Flexbox(
 )
 
 card = Card(
-    title="2️⃣ Compare and update",
-    description="Select the source team, compare instances and update the data.",
+    title="2️⃣ Select teams to compare",
+    description="Select the teams, compare instances and update the data.",
     content=Container(
         [
             team_select,

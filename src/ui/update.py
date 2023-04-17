@@ -32,8 +32,8 @@ progresses = {level: Progress() for level in g.LEVELS}
 progresses_container = Container(widgets=list(progresses.values()))
 
 card = Card(
-    title="3️⃣ Progress status",
-    description="Progress of comparison and upload of data to target instance.",
+    title="3️⃣ Compare and update",
+    description="Progress and results of comparison and data upload to the target instance.",
     content=Container(
         [
             difference_text,
