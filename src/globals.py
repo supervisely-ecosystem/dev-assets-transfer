@@ -12,6 +12,12 @@ IMAGES_DIR = os.path.join(TMP_DIR, "images")
 os.makedirs(TMP_DIR, exist_ok=True)
 os.makedirs(IMAGES_DIR, exist_ok=True)
 
+INSTANCES = {
+    "Dev": "https://dev.supervise.ly/",
+    "App": "https://app.supervise.ly/",
+    "Assets": "https://assets.supervise.ly/",
+}
+
 INDICES = {"images_ids": 0, "image_names": 1, "image_metas": 13}
 
 load_dotenv("local.env")
@@ -20,12 +26,30 @@ source_api: sly.Api = sly.Api.from_env()
 
 TEAM_ID = sly.io.env.team_id()
 
-TARGET_SERVER_ADDRESS = "https://assets.supervise.ly/"
+# TARGET_SERVER_ADDRESS = "https://assets.supervise.ly/"
 TARGET_TEAM_NAME = "primitives"
+DIFFERENCES_JSON = os.path.join(TMP_DIR, "team_differences.json")
 
-LEVELS = ["team", "workspace", "project", "image"]
+LEVELS = ["workspace", "project"]
 TAG = "inference"
 BATCH_SIZE = 100
+
+
+class State:
+    def __init__(self):
+        self.instance = None
+        self.target_team_name = None
+        self.target_api_key = None
+        self.target_api = None
+        self.continue_process = True
+        self.normalize_image_metadata = True
+        self.annotated_images = 0
+        self.tagged_images = 0
+        self.uploaded_annotated_images = 0
+        self.uploaded_tagged_images = 0
+
+
+STATE = State()
 
 
 def key_from_file() -> Optional[str]:

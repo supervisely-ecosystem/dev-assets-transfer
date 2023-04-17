@@ -1,9 +1,9 @@
 {
-  "name": "Source-Target Transfer App",
+  "name": "Instance Images Transfer",
   "type": "app",
   "version": "2.0.0",
-  "categories": ["images"],
-  "description": "Transfers images from source to target instance.",
+  "categories": ["images", "data operations"],
+  "description": "Transfers images between Supervisely instances.",
   "docker_image": "supervisely/base-py-sdk:6.70.13",
   "entrypoint": "python -m uvicorn src.main:app --host 0.0.0.0 --port 8000",
   "port": 8000,

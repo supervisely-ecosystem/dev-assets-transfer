@@ -10,18 +10,12 @@ import supervisely as sly
 from supervisely.app.widgets import Card, Container, Text, Progress, Button
 
 import src.globals as g
-import src.ui.keys as k
 
-annotated_images = 0
-tagged_images = 0
 
-uploaded_annotated_images = 0
-uploaded_tagged_images = 0
-
-team_differences_path = os.path.join(g.TMP_DIR, "team_differences.json")
-
-annotated_images_text = Text(f"Annotated images: {annotated_images}", status="info")
-tagged_images_text = Text(f"Tagged images: {tagged_images}", status="info")
+annotated_images_text = Text(
+    f"Annotated images: {g.STATE.annotated_images}", status="info"
+)
+tagged_images_text = Text(f"Tagged images: {g.STATE.tagged_images}", status="info")
 difference_text = Text(status="success")
 uploaded_text = Text(status="success")
 
@@ -70,14 +64,11 @@ def measure_time(function: callable) -> callable:
 
 @measure_time
 def team_difference(source_team_id):
-    global annotated_images, tagged_images
-    annotated_images = tagged_images = 0
+    g.STATE.annotated_images = g.STATE.tagged_images = 0
+    g.STATE.uploaded_annotated_images = g.STATE.uploaded_tagged_images = 0
 
-    global uploaded_annotated_images, uploaded_tagged_images
-    uploaded_annotated_images = uploaded_tagged_images = 0
-
-    annotated_images_text.text = f"Annotated images: {annotated_images}"
-    tagged_images_text.text = f"Tagged images: {tagged_images}"
+    annotated_images_text.text = f"Annotated images: {g.STATE.annotated_images}"
+    tagged_images_text.text = f"Tagged images: {g.STATE.tagged_images}"
 
     annotated_images_text.show()
     tagged_images_text.show()
@@ -85,14 +76,11 @@ def team_difference(source_team_id):
     difference_text.hide()
     uploaded_text.hide()
 
-    upload_button.hide()
-
     team_differences = defaultdict(list)
 
-    team_name = g.TARGET_TEAM_NAME
-    # team_name = g.source_api.team.get_info_by_id(source_team_id).name
+    team_name = g.STATE.target_team_name
     sly.logger.debug(f"Readed team name as {team_name}.")
-    target_team = k.target_api.team.get_info_by_name(team_name)
+    target_team = g.STATE.target_api.team.get_info_by_name(team_name)
 
     if target_team:
         target_team_id = target_team.id
@@ -103,7 +91,7 @@ def team_difference(source_team_id):
         sly.logger.debug(
             f"Team {team_name} is not found in target instance. Will create it."
         )
-        target_team_id = k.target_api.team.create(team_name).id
+        target_team_id = g.STATE.target_api.team.create(team_name).id
         sly.logger.debug(
             f"Team {team_name} is created in target instance with ID {target_team_id}."
         )
@@ -112,33 +100,29 @@ def team_difference(source_team_id):
     sly.logger.debug(
         f"Found {len(source_workspaces)} workspaces in source team, starting workspace comparison."
     )
-    with progresses["team"](
-        message=f"Comparing workspaces in team {team_name}...",
-        total=len(source_workspaces),
-    ) as pbar:
-        for workspace in source_workspaces:
-            team_differences[workspace.name] = workspace_difference(
-                workspace, target_team_id
-            )
-            pbar.update(1)
+
+    for workspace in source_workspaces:
+        team_differences[workspace.name] = workspace_difference(
+            workspace, target_team_id
+        )
 
     sly.logger.debug(
-        f"Finished workspaces comparison. Found new {annotated_images} annotated images "
-        f"and {tagged_images} tagged images."
+        f"Finished workspaces comparison. Found new {g.STATE.annotated_images} annotated images "
+        f"and {g.STATE.tagged_images} tagged images."
     )
 
-    global team_differences_path
-    team_differences_path = os.path.join(g.TMP_DIR, "team_differences.json")
-    with open(team_differences_path, "w", encoding="utf-8") as f:
+    with open(g.DIFFERENCES_JSON, "w", encoding="utf-8") as f:
         json.dump(team_differences, f, ensure_ascii=False, indent=4)
 
-    sly.logger.debug(f"Team differences are saved to {team_differences_path}.")
+    sly.logger.debug(f"Team differences are saved to {g.DIFFERENCES_JSON}.")
 
     annotated_images_text.hide()
     tagged_images_text.hide()
-    upload_button.show()
 
-    difference_text.text = f"Found {annotated_images} new annotated images and {tagged_images} new tagged images."
+    difference_text.text = (
+        f"Found {g.STATE.annotated_images} new annotated images "
+        f"and {g.STATE.tagged_images} new tagged images."
+    )
     difference_text.show()
 
 
@@ -148,7 +132,7 @@ def workspace_difference(source_workspace, target_team_id):
 
     workspace_name = source_workspace.name
     sly.logger.debug(f"Working on a workspace {workspace_name}.")
-    target_workspace = k.target_api.workspace.get_info_by_name(
+    target_workspace = g.STATE.target_api.workspace.get_info_by_name(
         target_team_id, workspace_name
     )
 
@@ -161,7 +145,7 @@ def workspace_difference(source_workspace, target_team_id):
         sly.logger.debug(
             f"Workspace {workspace_name} is not found in target team. Will create it."
         )
-        target_workspace_id = k.target_api.workspace.create(
+        target_workspace_id = g.STATE.target_api.workspace.create(
             target_team_id, workspace_name
         ).id
         sly.logger.debug(
@@ -172,16 +156,18 @@ def workspace_difference(source_workspace, target_team_id):
     sly.logger.debug(
         f"Found {len(source_projects)} projects in source workspace, starting project comparison."
     )
+    progresses["workspace"].show()
 
     with progresses["workspace"](
         message=f"Comparing projects in workspace {source_workspace.name}...",
         total=len(source_projects),
     ) as pbar:
         for project in source_projects:
-            workspace_differences[project.name] = project_difference(
-                project, target_workspace_id
-            )
-            pbar.update(1)
+            if g.STATE.continue_process:
+                workspace_differences[project.name] = project_difference(
+                    project, target_workspace_id
+                )
+                pbar.update(1)
 
     sly.logger.debug("Finished projects comparison.")
 
@@ -194,7 +180,7 @@ def project_difference(source_project, target_workspace_id):
 
     project_name = source_project.name
     sly.logger.debug(f"Working on a project {project_name}.")
-    target_project = k.target_api.project.get_info_by_name(
+    target_project = g.STATE.target_api.project.get_info_by_name(
         target_workspace_id, project_name
     )
 
@@ -207,7 +193,7 @@ def project_difference(source_project, target_workspace_id):
         sly.logger.debug(
             f"Project {project_name} is not found in target workspace. Will create it."
         )
-        target_project_id = k.target_api.project.create(
+        target_project_id = g.STATE.target_api.project.create(
             target_workspace_id, project_name
         ).id
         sly.logger.debug(
@@ -218,16 +204,18 @@ def project_difference(source_project, target_workspace_id):
     sly.logger.debug(
         f"Found {len(source_datasets)} datasets in source project, starting dataset comparison."
     )
+    progresses["project"].show()
 
     with progresses["project"](
         message=f"Comparing datasets in project {source_project.name}...",
         total=len(source_datasets),
     ) as pbar:
         for dataset in source_datasets:
-            project_differences[dataset.name] = dataset_difference(
-                dataset, target_project_id
-            )
-            pbar.update(1)
+            if g.STATE.continue_process:
+                project_differences[dataset.name] = dataset_difference(
+                    dataset, target_project_id
+                )
+                pbar.update(1)
 
     sly.logger.debug("Finished datasets comparison.")
 
@@ -238,7 +226,7 @@ def project_difference(source_project, target_workspace_id):
 def dataset_difference(source_dataset, target_project_id):
     dataset_name = source_dataset.name
     sly.logger.debug(f"Working on a dataset {dataset_name}.")
-    target_dataset = k.target_api.dataset.get_info_by_name(
+    target_dataset = g.STATE.target_api.dataset.get_info_by_name(
         target_project_id, dataset_name
     )
 
@@ -251,7 +239,9 @@ def dataset_difference(source_dataset, target_project_id):
         sly.logger.debug(
             f"Dataset {dataset_name} is not found in target project. Will create it."
         )
-        target_dataset = k.target_api.dataset.create(target_project_id, dataset_name)
+        target_dataset = g.STATE.target_api.dataset.create(
+            target_project_id, dataset_name
+        )
         target_dataset_id = target_dataset.id
         sly.logger.debug(
             f"Dataset {dataset_name} is created in target project with ID {target_dataset_id}."
@@ -260,7 +250,7 @@ def dataset_difference(source_dataset, target_project_id):
     source_images = g.source_api.image.get_list(source_dataset.id)
     sly.logger.debug(f"Found {len(source_images)} images in source dataset.")
 
-    target_images = k.target_api.image.get_list(target_dataset_id)
+    target_images = g.STATE.target_api.image.get_list(target_dataset_id)
     sly.logger.debug(f"Found {len(target_images)} images in target dataset.")
 
     target_names = [obj.name for obj in target_images]
@@ -271,18 +261,17 @@ def dataset_difference(source_dataset, target_project_id):
 
     new_annotated_images, new_tagged_images = filter_images(new_images, source_dataset)
 
-    global annotated_images, tagged_images
-    annotated_images += len(new_annotated_images)
-    tagged_images += len(new_tagged_images)
+    g.STATE.annotated_images += len(new_annotated_images)
+    g.STATE.tagged_images += len(new_tagged_images)
 
     if len(new_annotated_images) > 0:
         annotated_images_text.text = (
-            f"Annotated images: {annotated_images} "
+            f"Annotated images: {g.STATE.annotated_images} "
             f"(+{len(new_annotated_images)} from {dataset_name})"
         )
     if len(new_tagged_images) > 0:
         tagged_images_text.text = (
-            f"Tagged images: {tagged_images} "
+            f"Tagged images: {g.STATE.tagged_images} "
             f"(+{len(new_tagged_images)} from {dataset_name})"
         )
 
@@ -355,11 +344,16 @@ def upload_images():
 
     import src.ui.team as team
 
+    g.STATE.normalize_image_metadata = team.normalize_metadata_checkbox.is_checked()
+
+    sly.logger.debug(
+        f"Normalize image metadata is set to {g.STATE.normalize_image_metadata}."
+    )
+
     team.card._lock_message = "Updating images..."
     team.card.lock()
 
-    global team_differences_path
-    with open(team_differences_path, "r", encoding="utf-8") as f:
+    with open(g.DIFFERENCES_JSON, "r", encoding="utf-8") as f:
         team_differences = json.load(f)
 
     sly.logger.debug("Successfully loaded team differences JSON file.")
@@ -367,12 +361,16 @@ def upload_images():
     for workspace_name, projects in team_differences.items():
         sly.logger.debug(f"Working on a workspace {workspace_name}.")
 
+        progresses["workspace"].show()
+
         with progresses["workspace"](
             message=f"Uploading projects in workspace {workspace_name}...",
             total=len(projects),
         ) as ws_pbar:
             for project_name, datasets in projects.items():
                 sly.logger.debug(f"Working on a project {project_name}.")
+
+                progresses["project"].show()
 
                 with progresses["project"](
                     message=f"Uploading datasets in project {project_name}...",
@@ -437,24 +435,26 @@ def upload_images():
                             f"Downloaded {len(tagged_annotations)} tagged annotations."
                         )
 
-                        global uploaded_annotated_images
-                        uploaded_annotated_images += upload_images_with_annotations(
-                            annotated_images,
-                            target_dataset_id,
-                            dataset_name,
-                            annotated_annotations,
+                        g.STATE.uploaded_annotated_images += (
+                            upload_images_with_annotations(
+                                annotated_images,
+                                target_dataset_id,
+                                dataset_name,
+                                annotated_annotations,
+                            )
                         )
 
                         sly.logger.debug(
                             f"Uploaded annotated images with annotations to dataset {dataset_name}."
                         )
 
-                        global uploaded_tagged_images
-                        uploaded_tagged_images += upload_images_with_annotations(
-                            tagged_images,
-                            target_dataset_id,
-                            dataset_name,
-                            tagged_annotations,
+                        g.STATE.uploaded_tagged_images += (
+                            upload_images_with_annotations(
+                                tagged_images,
+                                target_dataset_id,
+                                dataset_name,
+                                tagged_annotations,
+                            )
                         )
 
                         sly.logger.debug(
@@ -489,8 +489,8 @@ def upload_images():
     team.card.unlock()
 
     uploaded_text.text = (
-        f"Successfully uploaded {uploaded_annotated_images} annotated images "
-        f"and {uploaded_tagged_images} tagged images."
+        f"Successfully uploaded {g.STATE.uploaded_annotated_images} annotated images "
+        f"and {g.STATE.uploaded_tagged_images} tagged images."
     )
     uploaded_text.show()
 
@@ -499,23 +499,16 @@ def upload_images():
 def download_images(images, source_dataset_id, dataset_name):
     sly.logger.debug(f"Starting download of images from dataset {dataset_name}.")
 
-    with progresses["image"](
-        message=f"Downloading images from dataset {dataset_name}...",
-        total=len(images.ids),
-    ) as pbar:
-        for batch_names, batch_paths in zip(
-            sly.batched(images.ids, batch_size=g.BATCH_SIZE),
-            sly.batched(images.paths, batch_size=g.BATCH_SIZE),
-        ):
-            g.source_api.image.download_paths(
-                source_dataset_id, batch_names, batch_paths
-            )
-            pbar.update(len(batch_names))
+    for batch_names, batch_paths in zip(
+        sly.batched(images.ids, batch_size=g.BATCH_SIZE),
+        sly.batched(images.paths, batch_size=g.BATCH_SIZE),
+    ):
+        g.source_api.image.download_paths(source_dataset_id, batch_names, batch_paths)
 
-            sly.logger.debug(
-                f"Downloaded {len(batch_names)} images from dataset {dataset_name}."
-            )
-        sly.logger.debug(f"Finished download of images from dataset {dataset_name}.")
+        sly.logger.debug(
+            f"Downloaded {len(batch_names)} images from dataset {dataset_name}."
+        )
+    sly.logger.debug(f"Finished download of images from dataset {dataset_name}.")
 
 
 def update_project_meta(source_dataset_id, target_dataset_id):
@@ -532,13 +525,13 @@ def update_project_meta(source_dataset_id, target_dataset_id):
         f"Successfully downloaded project meta for dataset {source_dataset_id}."
     )
 
-    target_project_id = k.target_api.dataset.get_info_by_id(
+    target_project_id = g.STATE.target_api.dataset.get_info_by_id(
         target_dataset_id
     ).project_id
 
     sly.logger.debug(f"Retrieved target project ID: {target_project_id}.")
 
-    k.target_api.project.update_meta(target_project_id, project_meta)
+    g.STATE.target_api.project.update_meta(target_project_id, project_meta)
 
     sly.logger.debug(
         f"Successfully updated project meta for dataset {target_dataset_id}."
@@ -580,29 +573,24 @@ def upload_images_with_annotations(
 
     uploaded_image_ids = []
 
-    with progresses["image"](
-        message=f"Uploading images to dataset {dataset_name}...", total=len(images.ids)
-    ) as pbar:
-        for batch_names, batch_paths, batch_metas in zip(
-            sly.batched(images.names, batch_size=g.BATCH_SIZE),
-            sly.batched(images.paths, batch_size=g.BATCH_SIZE),
-            sly.batched(images.metas, batch_size=g.BATCH_SIZE),
-        ):
-            uploaded_batch = k.target_api.image.upload_paths(
-                target_dataset_id, batch_names, batch_paths, metas=batch_metas
-            )
+    for batch_names, batch_paths, batch_metas in zip(
+        sly.batched(images.names, batch_size=g.BATCH_SIZE),
+        sly.batched(images.paths, batch_size=g.BATCH_SIZE),
+        sly.batched(images.metas, batch_size=g.BATCH_SIZE),
+    ):
+        uploaded_batch = g.STATE.target_api.image.upload_paths(
+            target_dataset_id, batch_names, batch_paths, metas=batch_metas
+        )
 
-            uploaded_batch_ids = [image.id for image in uploaded_batch]
-            uploaded_image_ids.extend(uploaded_batch_ids)
+        uploaded_batch_ids = [image.id for image in uploaded_batch]
+        uploaded_image_ids.extend(uploaded_batch_ids)
 
-            pbar.update(len(batch_names))
+        sly.logger.debug(
+            f"Uploaded {len(batch_names)} images to dataset {dataset_name}."
+        )
+    sly.logger.debug(f"Finished upload of images to dataset {dataset_name}.")
 
-            sly.logger.debug(
-                f"Uploaded {len(batch_names)} images to dataset {dataset_name}."
-            )
-        sly.logger.debug(f"Finished upload of images to dataset {dataset_name}.")
-
-    k.target_api.annotation.upload_anns(uploaded_image_ids, annotations)
+    g.STATE.target_api.annotation.upload_anns(uploaded_image_ids, annotations)
 
     sly.logger.debug(
         f"Uploaded {len(annotations)} annotations to dataset {dataset_name}."
@@ -619,9 +607,9 @@ def get_image_data(images, dataset_name):
 
     sly.logger.debug(f"Readed {len(image_ids)} image IDs and names.")
 
-    image_metas = normalize_image_metadata(image_metas)
-
-    sly.logger.debug(f"Normalized {len(image_metas)} image metas.")
+    if g.STATE.normalize_image_metadata:
+        image_metas = normalize_image_metadata(image_metas)
+        sly.logger.debug(f"Normalized {len(image_metas)} image metas.")
 
     if len(image_ids) == len(image_names) == len(image_metas):
         sly.logger.debug("All three lists have the same length.")

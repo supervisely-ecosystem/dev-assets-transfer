@@ -1,6 +1,16 @@
 import supervisely as sly
 
-from supervisely.app.widgets import Container, Card, SelectTeam, Button, Text, Flexbox
+from supervisely.app.widgets import (
+    Container,
+    Card,
+    SelectTeam,
+    Button,
+    Text,
+    Flexbox,
+    Input,
+    Checkbox,
+    Field,
+)
 
 import src.globals as g
 import src.ui.update as update
@@ -11,15 +21,29 @@ warning_message.hide()
 # Field with team selector.
 team_select = SelectTeam(default_id=g.TEAM_ID)
 
+target_team_input = Input(
+    value=g.TARGET_TEAM_NAME, minlength=1, placeholder="Enter target team name"
+)
+
+normalize_metadata_checkbox = Checkbox(content="Normalize metadata", checked=True)
+normalize_metadata_field = Field(
+    title="Normalize image metadata",
+    description="If checked the image metadata will be normalized with required fields for Assets instance.",
+    content=normalize_metadata_checkbox,
+)
+normalize_metadata_field.hide()
+
 load_button = Button("Compare data")
+cancel_button = Button("Cancel", button_type="danger", icon="zmdi zmdi-close-circle-o")
 change_button = Button("Change source", icon="zmdi zmdi-swap-vertical-circle")
+cancel_button.hide()
 change_button.hide()
 
 refresh_button = Button("Refresh", icon="zmdi zmdi-refresh-alt", button_type="success")
 refresh_button.hide()
 
 buttons_flexbox = Flexbox(
-    [load_button, change_button, refresh_button, update.upload_button]
+    [load_button, cancel_button, change_button, refresh_button, update.upload_button]
 )
 
 card = Card(
@@ -28,6 +52,8 @@ card = Card(
     content=Container(
         [
             team_select,
+            target_team_input,
+            normalize_metadata_field,
             buttons_flexbox,
             warning_message,
         ],
@@ -40,25 +66,46 @@ card.lock()
 
 @load_button.click
 def load_data():
+    g.STATE.continue_process = True
+
     warning_message.hide()
-    load_button.text = "Comparing..."
+    normalize_metadata_field.hide()
 
     source_team_id = team_select.get_selected_id()
-    if not source_team_id:
-        warning_message.text = "Team is not selected."
+    g.STATE.target_team_name = target_team_input.get_value()
+
+    if not g.STATE.target_team_name:
+        warning_message.text = "Target team name is not specified."
         warning_message.show()
         return
-    sly.logger.debug(f"Team level is selected. Team ID: {source_team_id}.")
+    sly.logger.debug(f"Team with ID {source_team_id} is selected.")
+    load_button.text = "Comparing..."
     team_select.disable()
+    target_team_input.disable()
 
     update.card.unlock()
+    cancel_button.show()
+    update.upload_button.hide()
 
     update.team_difference(source_team_id)
 
-    load_button.text = "Compare data"
-    load_button.hide()
+    if g.STATE.continue_process:
+        load_button.hide()
+        normalize_metadata_field.show()
+        cancel_button.hide()
+        refresh_button.show()
+        update.upload_button.show()
+    else:
+        update.difference_text.hide()
+        update.card.lock()
+        for progress in update.progresses.values():
+            progress.hide()
+
+        warning_message.text = "The comparison was canceled."
+        warning_message.show()
+
     change_button.show()
-    refresh_button.show()
+    load_button.text = "Compare data"
 
 
 @refresh_button.click
@@ -77,5 +124,12 @@ def change_source():
     refresh_button.hide()
     load_button.show()
     team_select.enable()
+    target_team_input.enable()
     change_button.hide()
     update.card.lock()
+
+
+@cancel_button.click
+def cancel_process():
+    g.STATE.continue_process = False
+    cancel_button.hide()
