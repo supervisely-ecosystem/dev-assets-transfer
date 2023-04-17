@@ -82,6 +82,7 @@ def load_data():
     load_button.text = "Comparing..."
     team_select.disable()
     target_team_input.disable()
+    change_button.hide()
 
     update.card.unlock()
     cancel_button.show()
