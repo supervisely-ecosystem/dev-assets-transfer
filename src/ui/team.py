@@ -78,6 +78,7 @@ def load_data():
         warning_message.text = "Target team name is not specified."
         warning_message.show()
         return
+
     sly.logger.debug(f"Team with ID {source_team_id} is selected.")
     load_button.text = "Comparing..."
     team_select.disable()

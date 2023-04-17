@@ -10,7 +10,8 @@ import supervisely as sly
 from supervisely.app.widgets import Card, Container, Text, Progress, Button
 
 import src.globals as g
-
+import src.ui.team as team
+import src.ui.keys as keys
 
 annotated_images_text = Text(
     f"Annotated images: {g.STATE.annotated_images}", status="info"
@@ -67,6 +68,9 @@ def team_difference(source_team_id):
     g.STATE.annotated_images = g.STATE.tagged_images = 0
     g.STATE.uploaded_annotated_images = g.STATE.uploaded_tagged_images = 0
 
+    keys.card._lock_message = "Comparing images..."
+    keys.card.lock()
+
     annotated_images_text.text = f"Annotated images: {g.STATE.annotated_images}"
     tagged_images_text.text = f"Tagged images: {g.STATE.tagged_images}"
 
@@ -118,6 +122,8 @@ def team_difference(source_team_id):
 
     annotated_images_text.hide()
     tagged_images_text.hide()
+
+    keys.card.unlock()
 
     difference_text.text = (
         f"Found {g.STATE.annotated_images} new annotated images "
@@ -339,10 +345,14 @@ def filter_images(new_images, source_dataset):
 def upload_images():
     sly.logger.debug("Starting upload of images.")
 
+    team.team_select.disable()
+    team.target_team_input.disable()
+    team.normalize_metadata_checkbox.disable()
+    team.change_button.disable()
+    team.refresh_button.disable()
+
     upload_button.text = "Updating..."
     uploaded_text.hide()
-
-    import src.ui.team as team
 
     g.STATE.normalize_image_metadata = team.normalize_metadata_checkbox.is_checked()
 
@@ -350,8 +360,8 @@ def upload_images():
         f"Normalize image metadata is set to {g.STATE.normalize_image_metadata}."
     )
 
-    team.card._lock_message = "Updating images..."
-    team.card.lock()
+    keys.card._lock_message = "Updating images..."
+    keys.card.lock()
 
     with open(g.DIFFERENCES_JSON, "r", encoding="utf-8") as f:
         team_differences = json.load(f)
@@ -477,10 +487,13 @@ def upload_images():
     upload_button.text = "Update data"
     upload_button.hide()
 
-    team.card.lock_message = (
-        "Enter the Target API key and check the connection on step 1️⃣."
-    )
-    team.card.unlock()
+    team.team_select.enable()
+    team.target_team_input.enable()
+    team.normalize_metadata_checkbox.enable()
+    team.change_button.enable()
+    team.refresh_button.enable()
+
+    keys.card.unlock()
 
     uploaded_text.text = (
         f"Successfully uploaded {g.STATE.uploaded_annotated_images} annotated images "
