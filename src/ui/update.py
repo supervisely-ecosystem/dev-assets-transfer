@@ -7,11 +7,29 @@ from time import perf_counter
 
 import supervisely as sly
 
-from supervisely.app.widgets import Card, Container, Text, Progress, Button, Flexbox
+from supervisely.app.widgets import (
+    Card,
+    Container,
+    Text,
+    Progress,
+    Button,
+    Flexbox,
+    Checkbox,
+    Field,
+)
 
 import src.globals as g
 import src.ui.team as team
 import src.ui.keys as keys
+
+normalize_metadata_checkbox = Checkbox(content="Normalize metadata", checked=True)
+normalize_metadata_field = Field(
+    title="Normalize image metadata",
+    description="If checked the image metadata will be normalized with required fields for Assets instance.",
+    content=normalize_metadata_checkbox,
+)
+normalize_metadata_field.hide()
+
 
 annotated_images_text = Text(
     f"Annotated images: {g.STATE.annotated_images}", status="info"
@@ -40,9 +58,10 @@ card = Card(
     description="Progress and results of comparison and data upload to the target instance.",
     content=Container(
         [
+            normalize_metadata_field,
+            buttons_flexbox,
             difference_text,
             uploaded_text,
-            buttons_flexbox,
             annotated_images_text,
             tagged_images_text,
             progresses_container,
@@ -352,17 +371,17 @@ def upload_images():
 
     g.STATE.continue_upload = True
     cancel_button.show()
+    normalize_metadata_checkbox.disable()
 
     team.team_select.disable()
     team.target_team_input.disable()
-    team.normalize_metadata_checkbox.disable()
     team.change_button.disable()
     team.refresh_button.disable()
 
     upload_button.text = "Updating..."
     uploaded_text.hide()
 
-    g.STATE.normalize_image_metadata = team.normalize_metadata_checkbox.is_checked()
+    g.STATE.normalize_image_metadata = normalize_metadata_checkbox.is_checked()
 
     sly.logger.debug(
         f"Normalize image metadata is set to {g.STATE.normalize_image_metadata}."
@@ -511,10 +530,10 @@ def upload_images():
     upload_button.hide()
     cancel_button.hide()
     upload_button.text = "Update data"
+    normalize_metadata_checkbox.enable()
 
     team.team_select.enable()
     team.target_team_input.enable()
-    team.normalize_metadata_checkbox.enable()
     team.change_button.enable()
     team.refresh_button.enable()
 

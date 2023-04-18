@@ -25,14 +25,6 @@ target_team_input = Input(
     value=g.TARGET_TEAM_NAME, minlength=1, placeholder="Enter target team name"
 )
 
-normalize_metadata_checkbox = Checkbox(content="Normalize metadata", checked=True)
-normalize_metadata_field = Field(
-    title="Normalize image metadata",
-    description="If checked the image metadata will be normalized with required fields for Assets instance.",
-    content=normalize_metadata_checkbox,
-)
-normalize_metadata_field.hide()
-
 load_button = Button("Compare data")
 cancel_button = Button("Cancel", button_type="danger", icon="zmdi zmdi-close-circle-o")
 change_button = Button("Change source", icon="zmdi zmdi-swap-vertical-circle")
@@ -51,7 +43,6 @@ card = Card(
         [
             team_select,
             target_team_input,
-            normalize_metadata_field,
             buttons_flexbox,
             warning_message,
         ],
@@ -67,7 +58,7 @@ def load_data():
     g.STATE.continue_comparsion = True
 
     warning_message.hide()
-    normalize_metadata_field.hide()
+    update.normalize_metadata_field.hide()
 
     source_team_id = team_select.get_selected_id()
     g.STATE.target_team_name = target_team_input.get_value()
@@ -91,7 +82,7 @@ def load_data():
 
     if g.STATE.continue_comparsion:
         load_button.hide()
-        normalize_metadata_field.show()
+        update.normalize_metadata_field.show()
         cancel_button.hide()
         refresh_button.show()
         update.upload_button.show()
