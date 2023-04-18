@@ -47,6 +47,7 @@ card = Card(
             buttons_flexbox,
             warning_message,
             compare_progress,
+            update.comparsion_texts,
         ],
         direction="vertical",
     ),

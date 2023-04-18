@@ -43,6 +43,10 @@ tagged_images_text.hide()
 difference_text.hide()
 uploaded_text.hide()
 
+comparsion_texts = Container(
+    [difference_text, annotated_images_text, tagged_images_text]
+)
+
 upload_button = Button("Update data")
 cancel_button = Button("Cancel", button_type="danger", icon="zmdi zmdi-close-circle-o")
 upload_button.hide()
@@ -59,11 +63,8 @@ card = Card(
         [
             normalize_metadata_field,
             buttons_flexbox,
-            difference_text,
-            uploaded_text,
-            annotated_images_text,
-            tagged_images_text,
             upload_progress,
+            uploaded_text,
         ]
     ),
     lock_message="Select Team on step 2️⃣ and wait until comparison is finished.",
