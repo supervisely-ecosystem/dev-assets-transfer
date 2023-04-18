@@ -42,9 +42,7 @@ change_button.hide()
 refresh_button = Button("Refresh", icon="zmdi zmdi-refresh-alt", button_type="success")
 refresh_button.hide()
 
-buttons_flexbox = Flexbox(
-    [load_button, cancel_button, change_button, refresh_button, update.upload_button]
-)
+buttons_flexbox = Flexbox([load_button, cancel_button, change_button, refresh_button])
 
 card = Card(
     title="2️⃣ Select teams to compare",
@@ -66,7 +64,7 @@ card.lock()
 
 @load_button.click
 def load_data():
-    g.STATE.continue_process = True
+    g.STATE.continue_comparsion = True
 
     warning_message.hide()
     normalize_metadata_field.hide()
@@ -91,7 +89,7 @@ def load_data():
 
     update.team_difference(source_team_id)
 
-    if g.STATE.continue_process:
+    if g.STATE.continue_comparsion:
         load_button.hide()
         normalize_metadata_field.show()
         cancel_button.hide()
@@ -133,5 +131,5 @@ def change_source():
 
 @cancel_button.click
 def cancel_process():
-    g.STATE.continue_process = False
+    g.STATE.continue_comparsion = False
     cancel_button.hide()

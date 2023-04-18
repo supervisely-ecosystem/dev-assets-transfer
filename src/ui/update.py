@@ -7,7 +7,7 @@ from time import perf_counter
 
 import supervisely as sly
 
-from supervisely.app.widgets import Card, Container, Text, Progress, Button
+from supervisely.app.widgets import Card, Container, Text, Progress, Button, Flexbox
 
 import src.globals as g
 import src.ui.team as team
@@ -26,7 +26,11 @@ difference_text.hide()
 uploaded_text.hide()
 
 upload_button = Button("Update data")
+cancel_button = Button("Cancel", button_type="danger", icon="zmdi zmdi-close-circle-o")
 upload_button.hide()
+cancel_button.hide()
+
+buttons_flexbox = Flexbox([upload_button, cancel_button])
 
 progresses = {level: Progress() for level in g.LEVELS}
 progresses_container = Container(widgets=list(progresses.values()))
@@ -38,6 +42,7 @@ card = Card(
         [
             difference_text,
             uploaded_text,
+            buttons_flexbox,
             annotated_images_text,
             tagged_images_text,
             progresses_container,
@@ -169,7 +174,7 @@ def workspace_difference(source_workspace, target_team_id):
         total=len(source_projects),
     ) as pbar:
         for project in source_projects:
-            if g.STATE.continue_process:
+            if g.STATE.continue_comparsion:
                 workspace_differences[project.name] = project_difference(
                     project, target_workspace_id
                 )
@@ -217,7 +222,7 @@ def project_difference(source_project, target_workspace_id):
     #    total=len(source_datasets),
     # ) as pbar:
     for dataset in source_datasets:
-        if g.STATE.continue_process:
+        if g.STATE.continue_comparsion:
             project_differences[dataset.name] = dataset_difference(
                 dataset, target_project_id
             )
@@ -345,6 +350,9 @@ def filter_images(new_images, source_dataset):
 def upload_images():
     sly.logger.debug("Starting upload of images.")
 
+    g.STATE.continue_upload = True
+    cancel_button.show()
+
     team.team_select.disable()
     team.target_team_input.disable()
     team.normalize_metadata_checkbox.disable()
@@ -380,112 +388,127 @@ def upload_images():
             for project_name, datasets in projects.items():
                 sly.logger.debug(f"Working on a project {project_name}.")
 
-                # progresses["project"].show()
+                if g.STATE.continue_upload:
+                    for dataset_name, dataset in datasets.items():
+                        sly.logger.debug(f"Working on a dataset {dataset_name}.")
 
-                # with progresses["project"](
-                #     message=f"Uploading datasets in project {project_name}...",
-                #     total=len(datasets),
-                # ) as pr_pbar:
-                for dataset_name, dataset in datasets.items():
-                    sly.logger.debug(f"Working on a dataset {dataset_name}.")
+                        source_dataset_id = dataset["source"][0]
+                        target_dataset_id = dataset["target"][0]
 
-                    source_dataset_id = dataset["source"][0]
-                    target_dataset_id = dataset["target"][0]
-
-                    sly.logger.debug(
-                        f"Source dataset ID: {source_dataset_id}. Target dataset ID: {target_dataset_id}."
-                    )
-
-                    annotated_images = get_image_data(
-                        dataset["annotated_images"], dataset_name
-                    )
-                    tagged_images = get_image_data(
-                        dataset["tagged_images"], dataset_name
-                    )
-
-                    if annotated_images is None or tagged_images is None:
-                        sly.logger.error(
-                            f"Failed to get images data for dataset {dataset_name}."
+                        sly.logger.debug(
+                            f"Source dataset ID: {source_dataset_id}. Target dataset ID: {target_dataset_id}."
                         )
-                        continue
 
-                    download_images(annotated_images, source_dataset_id, dataset_name)
+                        annotated_images = get_image_data(
+                            dataset["annotated_images"], dataset_name
+                        )
+                        tagged_images = get_image_data(
+                            dataset["tagged_images"], dataset_name
+                        )
 
-                    sly.logger.debug(
-                        f"Finished downloading annotated images for dataset {dataset_name}."
-                    )
+                        if annotated_images is None or tagged_images is None:
+                            sly.logger.error(
+                                f"Failed to get images data for dataset {dataset_name}."
+                            )
+                            continue
 
-                    download_images(tagged_images, source_dataset_id, dataset_name)
+                        download_images(
+                            annotated_images, source_dataset_id, dataset_name
+                        )
 
-                    sly.logger.debug(
-                        f"Finished downloading tagged images for dataset {dataset_name}."
-                    )
+                        sly.logger.debug(
+                            f"Finished downloading annotated images for dataset {dataset_name}."
+                        )
 
-                    project_meta = update_project_meta(
-                        source_dataset_id, target_dataset_id
-                    )
+                        download_images(tagged_images, source_dataset_id, dataset_name)
 
-                    sly.logger.debug("Retrieved and updated project meta.")
+                        sly.logger.debug(
+                            f"Finished downloading tagged images for dataset {dataset_name}."
+                        )
 
-                    annotated_annotations = download_annotations(
-                        source_dataset_id, annotated_images.ids, project_meta
-                    )
+                        project_meta = update_project_meta(
+                            source_dataset_id, target_dataset_id
+                        )
 
-                    sly.logger.debug(
-                        f"Downloaded {len(annotated_annotations)} annotated annotations."
-                    )
+                        sly.logger.debug("Retrieved and updated project meta.")
 
-                    tagged_annotations = download_annotations(
-                        source_dataset_id, tagged_images.ids, project_meta
-                    )
+                        annotated_annotations = download_annotations(
+                            source_dataset_id, annotated_images.ids, project_meta
+                        )
 
-                    sly.logger.debug(
-                        f"Downloaded {len(tagged_annotations)} tagged annotations."
-                    )
+                        sly.logger.debug(
+                            f"Downloaded {len(annotated_annotations)} annotated annotations."
+                        )
 
-                    g.STATE.uploaded_annotated_images += upload_images_with_annotations(
-                        annotated_images,
-                        target_dataset_id,
-                        dataset_name,
-                        annotated_annotations,
-                    )
+                        tagged_annotations = download_annotations(
+                            source_dataset_id, tagged_images.ids, project_meta
+                        )
 
-                    sly.logger.debug(
-                        f"Uploaded annotated images with annotations to dataset {dataset_name}."
-                    )
+                        sly.logger.debug(
+                            f"Downloaded {len(tagged_annotations)} tagged annotations."
+                        )
 
-                    g.STATE.uploaded_tagged_images += upload_images_with_annotations(
-                        tagged_images,
-                        target_dataset_id,
-                        dataset_name,
-                        tagged_annotations,
-                    )
+                        g.STATE.uploaded_annotated_images += (
+                            upload_images_with_annotations(
+                                annotated_images,
+                                target_dataset_id,
+                                dataset_name,
+                                annotated_annotations,
+                            )
+                        )
 
-                    sly.logger.debug(
-                        f"Uploaded tagged images with annotations to dataset {dataset_name}."
-                    )
+                        sly.logger.debug(
+                            f"Uploaded annotated images with annotations to dataset {dataset_name}."
+                        )
 
-                    sly.logger.debug(
-                        f"Finished uploading images for dataset {dataset_name}."
-                    )
+                        g.STATE.uploaded_tagged_images += (
+                            upload_images_with_annotations(
+                                tagged_images,
+                                target_dataset_id,
+                                dataset_name,
+                                tagged_annotations,
+                            )
+                        )
 
-                    # pr_pbar.update(1)
+                        sly.logger.debug(
+                            f"Uploaded tagged images with annotations to dataset {dataset_name}."
+                        )
 
-                    rmtree(os.path.join(g.IMAGES_DIR, dataset_name))
-                    sly.logger.debug(
-                        f"Removed directory {os.path.join(g.IMAGES_DIR, dataset_name)} after uploading images."
-                    )
+                        sly.logger.debug(
+                            f"Finished uploading images for dataset {dataset_name}."
+                        )
 
-                    sly.logger.debug(
-                        f"Finished uploading datasets in project {project_name}."
-                    )
+                        rmtree(os.path.join(g.IMAGES_DIR, dataset_name))
+                        sly.logger.debug(
+                            f"Removed directory {os.path.join(g.IMAGES_DIR, dataset_name)} after uploading images."
+                        )
 
-                pbar.update(1)
+                        sly.logger.debug(
+                            f"Finished uploading datasets in project {project_name}."
+                        )
+                    pbar.update(1)
+        if not g.STATE.continue_upload:
+            sly.logger.debug(
+                f"Uploading of images was interrupted, while working on workspace {workspace_name}."
+            )
+            break
         sly.logger.debug(f"Finished uploading projects in workspace {workspace_name}.")
-    sly.logger.debug("Finished uploading images.")
+    if g.STATE.continue_upload:
+        sly.logger.debug("Finished uploading images.")
+        uploaded_text.text = (
+            f"Successfully uploaded {g.STATE.uploaded_annotated_images} annotated images "
+            f"and {g.STATE.uploaded_tagged_images} tagged images."
+        )
+    else:
+        sly.logger.debug("Uploading of images was interrupted.")
+        uploaded_text.text = (
+            f"Uploading of images was cancelled after uploading {g.STATE.uploaded_annotated_images} annotated images "
+            f"and {g.STATE.uploaded_tagged_images} tagged images."
+        )
 
-    upload_button.text = "Update data"
     upload_button.hide()
+    cancel_button.hide()
+    upload_button.text = "Update data"
 
     team.team_select.enable()
     team.target_team_input.enable()
@@ -495,10 +518,6 @@ def upload_images():
 
     keys.card.unlock()
 
-    uploaded_text.text = (
-        f"Successfully uploaded {g.STATE.uploaded_annotated_images} annotated images "
-        f"and {g.STATE.uploaded_tagged_images} tagged images."
-    )
     uploaded_text.show()
 
 
@@ -670,3 +689,9 @@ def normalize_image_metadata(image_metas):
         new_image_metas.append(new_image_meta)
 
     return new_image_metas
+
+
+@cancel_button.click
+def cancel():
+    g.STATE.continue_upload = False
+    cancel_button.hide()

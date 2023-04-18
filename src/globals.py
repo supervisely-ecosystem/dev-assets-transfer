@@ -44,7 +44,8 @@ class State:
         self.target_team_name = None
         self.target_api_key = None
         self.target_api = None
-        self.continue_process = True
+        self.continue_comparsion = True
+        self.continue_upload = True
         self.normalize_image_metadata = True
         self.annotated_images = 0
         self.tagged_images = 0
