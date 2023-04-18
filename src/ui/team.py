@@ -8,8 +8,6 @@ from supervisely.app.widgets import (
     Text,
     Flexbox,
     Input,
-    Checkbox,
-    Field,
 )
 
 import src.globals as g
@@ -37,8 +35,8 @@ refresh_button.hide()
 buttons_flexbox = Flexbox([load_button, cancel_button, change_button, refresh_button])
 
 card = Card(
-    title="2️⃣ Select teams to compare",
-    description="Select the teams, compare instances and update the data.",
+    title="2️⃣ Compare data",
+    description="Select source and target teams and start the comparison.",
     content=Container(
         [
             team_select,

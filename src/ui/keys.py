@@ -40,8 +40,8 @@ check_result.hide()
 
 # Main card with all keys widgets.
 card = Card(
-    "1️⃣ Target Instance",
-    "Select target instance and enter API key.",
+    "1️⃣ Instance",
+    "Select target instance and enter the API key.",
     content=Container(
         widgets=[
             instance_select,
