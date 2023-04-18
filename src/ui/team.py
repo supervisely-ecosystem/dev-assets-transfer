@@ -39,7 +39,7 @@ compare_progress = Progress()
 
 card = Card(
     title="2️⃣ Compare data",
-    description="Select source and target teams and start the comparison.",
+    description="Select the source team, enter the target team name and lanuch the comparison.",
     content=Container(
         [
             team_select,

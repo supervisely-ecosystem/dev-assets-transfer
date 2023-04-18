@@ -25,7 +25,10 @@ import src.ui.keys as keys
 normalize_metadata_checkbox = Checkbox(content="Normalize metadata", checked=True)
 normalize_metadata_field = Field(
     title="Normalize image metadata",
-    description="If checked the image metadata will be normalized with required fields for Assets instance.",
+    description=(
+        "If checked the images metadata will be normalized in accordance "
+        "with the requirements of Assets instance."
+    ),
     content=normalize_metadata_checkbox,
 )
 
@@ -57,7 +60,7 @@ upload_progress = Progress()
 
 card = Card(
     title="3️⃣ Update data",
-    description="Launch data update after comparison is finished.",
+    description="Images from the source team will be filtered and uploaded to the target team.",
     content=Container(
         [
             normalize_metadata_field,

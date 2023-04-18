@@ -42,7 +42,7 @@ check_result.hide()
 # Main card with all keys widgets.
 card = Card(
     "1️⃣ Instance",
-    "Select target instance and enter the API key.",
+    "Select the instance to which the data will be uploaded and enter the API key.",
     content=Container(
         widgets=[
             instance_select,
