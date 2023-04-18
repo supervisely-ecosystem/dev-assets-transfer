@@ -61,7 +61,6 @@ def load_data():
     g.STATE.continue_comparsion = True
 
     warning_message.hide()
-    update.normalize_metadata_field.hide()
 
     source_team_id = team_select.get_selected_id()
     g.STATE.target_team_name = target_team_input.get_value()
@@ -85,7 +84,6 @@ def load_data():
 
     if g.STATE.continue_comparsion:
         load_button.hide()
-        update.normalize_metadata_field.show()
         cancel_button.hide()
         refresh_button.show()
         update.upload_button.show()

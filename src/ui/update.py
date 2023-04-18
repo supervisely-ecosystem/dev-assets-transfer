@@ -28,7 +28,6 @@ normalize_metadata_field = Field(
     description="If checked the image metadata will be normalized with required fields for Assets instance.",
     content=normalize_metadata_checkbox,
 )
-normalize_metadata_field.hide()
 
 
 annotated_images_text = Text(
