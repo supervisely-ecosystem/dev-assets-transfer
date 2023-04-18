@@ -50,8 +50,7 @@ cancel_button.hide()
 
 buttons_flexbox = Flexbox([upload_button, cancel_button])
 
-progresses = {level: Progress() for level in g.LEVELS}
-progresses_container = Container(widgets=list(progresses.values()))
+upload_progress = Progress()
 
 card = Card(
     title="3️⃣ Update data",
@@ -64,7 +63,7 @@ card = Card(
             uploaded_text,
             annotated_images_text,
             tagged_images_text,
-            progresses_container,
+            upload_progress,
         ]
     ),
     lock_message="Select Team on step 2️⃣ and wait until comparison is finished.",
@@ -186,9 +185,9 @@ def workspace_difference(source_workspace, target_team_id):
     sly.logger.debug(
         f"Found {len(source_projects)} projects in source workspace, starting project comparison."
     )
-    progresses["workspace"].show()
+    team.compare_progress.show()
 
-    with progresses["workspace"](
+    with team.compare_progress(
         message=f"Comparing projects in workspace {source_workspace.name}...",
         total=len(source_projects),
     ) as pbar:
@@ -234,12 +233,6 @@ def project_difference(source_project, target_workspace_id):
     sly.logger.debug(
         f"Found {len(source_datasets)} datasets in source project, starting dataset comparison."
     )
-    # progresses["project"].show()
-
-    # with progresses["project"](
-    #    message=f"Comparing datasets in project {source_project.name}...",
-    #    total=len(source_datasets),
-    # ) as pbar:
     for dataset in source_datasets:
         if g.STATE.continue_comparsion:
             project_differences[dataset.name] = dataset_difference(
@@ -398,9 +391,9 @@ def upload_images():
     for workspace_name, projects in team_differences.items():
         sly.logger.debug(f"Working on a workspace {workspace_name}.")
 
-        progresses["workspace"].show()
+        upload_progress.show()
 
-        with progresses["workspace"](
+        with upload_progress(
             message=f"Uploading projects in workspace {workspace_name}...",
             total=len(projects),
         ) as pbar:
@@ -527,6 +520,7 @@ def upload_images():
             f"and {g.STATE.uploaded_tagged_images} tagged images."
         )
 
+    upload_progress.hide()
     upload_button.hide()
     cancel_button.hide()
     upload_button.text = "Update data"

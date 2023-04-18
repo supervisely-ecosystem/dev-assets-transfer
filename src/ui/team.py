@@ -8,6 +8,7 @@ from supervisely.app.widgets import (
     Text,
     Flexbox,
     Input,
+    Progress,
 )
 
 import src.globals as g
@@ -34,6 +35,8 @@ refresh_button.hide()
 
 buttons_flexbox = Flexbox([load_button, cancel_button, change_button, refresh_button])
 
+compare_progress = Progress()
+
 card = Card(
     title="2️⃣ Compare data",
     description="Select source and target teams and start the comparison.",
@@ -43,6 +46,7 @@ card = Card(
             target_team_input,
             buttons_flexbox,
             warning_message,
+            compare_progress,
         ],
         direction="vertical",
     ),
@@ -87,8 +91,7 @@ def load_data():
     else:
         update.difference_text.hide()
         update.card.lock()
-        for progress in update.progresses.values():
-            progress.hide()
+        compare_progress.hide()
 
         warning_message.text = "The comparison was canceled."
         warning_message.show()
