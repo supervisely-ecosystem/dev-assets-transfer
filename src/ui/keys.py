@@ -64,11 +64,12 @@ def connect_to_target():
     if not g.STATE.target_api_key:
         g.STATE.target_api_key = key_input.get_value()
 
-    instance = instance_select.get_value()
+    if not g.STATE.instance:
+        g.STATE.instance = instance_select.get_value()
 
     try:
         g.STATE.target_api = sly.Api(
-            server_address=instance,
+            server_address=g.STATE.instance,
             token=g.STATE.target_api_key,
             ignore_task_id=True,
         )
@@ -84,12 +85,20 @@ def connect_to_target():
         check_result.show()
         return
 
-    check_result.text = "The connection to the Target API was successful."
+    if g.STATE.from_team_files:
+        key_input.set_value(g.STATE.target_api_key)
+        instance_select.hide()
+        change_instance_button.hide()
+        key_input.disable()
+        instance_select.disable()
+    else:
+        change_instance_button.show()
+
+    check_result.text = f"Successfully connected to: {g.STATE.instance}."
     check_result.status = "success"
     check_result.show()
 
     # Disabling fields for entering API key if the connection was successful.
-    change_instance_button.show()
     instance_select.disable()
     key_input.disable()
     check_key_button.hide()
@@ -106,8 +115,8 @@ def change_instance():
     change_instance_button.hide()
 
 
-g.STATE.target_api_key = g.key_from_file()
-if g.STATE.target_api_key:
-    key_input.set_value(g.STATE.target_api_key)
-    key_input.disable()
+g.key_from_file()
+if g.STATE.target_api_key and g.STATE.instance:
+    g.STATE.from_team_files = True
+    connect_to_target()
     file_loaded_info.show()

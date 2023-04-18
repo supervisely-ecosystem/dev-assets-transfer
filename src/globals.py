@@ -9,13 +9,14 @@ from dotenv import load_dotenv
 ABSOLUTE_PATH = os.path.dirname(__file__)
 TMP_DIR = os.path.join(ABSOLUTE_PATH, "tmp")
 IMAGES_DIR = os.path.join(TMP_DIR, "images")
+ENV_FILE = os.path.join(ABSOLUTE_PATH, "target.env")
 os.makedirs(TMP_DIR, exist_ok=True)
 os.makedirs(IMAGES_DIR, exist_ok=True)
 
 INSTANCES = {
+    "Assets": "https://assets.supervise.ly/",
     "Dev": "https://dev.supervise.ly/",
     "App": "https://app.supervise.ly/",
-    "Assets": "https://assets.supervise.ly/",
 }
 
 INDICES = {"images_ids": 0, "image_names": 1, "image_metas": 13}
@@ -44,6 +45,7 @@ class State:
         self.target_team_name = None
         self.target_api_key = None
         self.target_api = None
+        self.from_team_files = False
         self.continue_comparsion = True
         self.continue_upload = True
         self.normalize_image_metadata = True
@@ -64,14 +66,15 @@ def key_from_file() -> Optional[str]:
     try:
         # Get target.env from the team files.
         INPUT_FILE = sly.env.file(True)
-        source_api.file.download(TEAM_ID, INPUT_FILE, "target.env")
+        source_api.file.download(TEAM_ID, INPUT_FILE, ENV_FILE)
+        sly.logger.info(f"Target API key file was downloaded to {ENV_FILE}.")
 
         # Read Target API key from the file.
-        load_dotenv("target.env")
-        TARGET_API_KEY = os.environ["TARGET_API_KEY"]
+        load_dotenv(ENV_FILE)
+        STATE.target_api_key = os.environ["API_TOKEN"]
+        STATE.instance = os.environ["SERVER_ADDRESS"]
 
-        sly.logger.info("Target API key was loaded from the team files.")
-        return TARGET_API_KEY
+        sly.logger.info("Target API key and instance were loaded from the team files.")
     except Exception:
         sly.logger.info(
             "No file with Target API key was provided, starting in input mode."
