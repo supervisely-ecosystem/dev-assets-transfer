@@ -27,14 +27,9 @@ source_api: sly.Api = sly.Api.from_env()
 
 TEAM_ID = sly.io.env.team_id()
 
-# TARGET_SERVER_ADDRESS = "https://assets.supervise.ly/"
 TARGET_TEAM_NAME = "primitives"
 DIFFERENCES_JSON = os.path.join(TMP_DIR, "team_differences.json")
 
-LEVELS = [
-    "workspace",
-    # "project",
-]
 TAG = "inference"
 BATCH_SIZE = 100
 
@@ -71,8 +66,8 @@ def key_from_file() -> Optional[str]:
 
         # Read Target API key from the file.
         load_dotenv(ENV_FILE)
-        STATE.target_api_key = os.environ["API_TOKEN"]
-        STATE.instance = os.environ["SERVER_ADDRESS"]
+        STATE.target_api_key = os.environ["TARGET_API_TOKEN"]
+        STATE.instance = os.environ["TARGET_SERVER_ADDRESS"]
 
         sly.logger.info("Target API key and instance were loaded from the team files.")
     except Exception:
