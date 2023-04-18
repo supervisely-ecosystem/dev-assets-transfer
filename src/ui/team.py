@@ -9,6 +9,7 @@ from supervisely.app.widgets import (
     Flexbox,
     Input,
     Progress,
+    Field,
 )
 
 import src.globals as g
@@ -22,6 +23,11 @@ team_select = SelectTeam(default_id=g.TEAM_ID)
 
 target_team_input = Input(
     value=g.TARGET_TEAM_NAME, minlength=1, placeholder="Enter target team name"
+)
+target_team_field = Field(
+    target_team_input,
+    "Target team name",
+    "Enter the name of the team in the target instance to which the data will be uploaded.",
 )
 
 load_button = Button("Compare data")
@@ -39,11 +45,11 @@ compare_progress = Progress()
 
 card = Card(
     title="2️⃣ Compare data",
-    description="Select the source team, enter the target team name and lanuch the comparison.",
+    description="Select the source team, enter the target team name and launch the comparison.",
     content=Container(
         [
             team_select,
-            target_team_input,
+            target_team_field,
             buttons_flexbox,
             warning_message,
             compare_progress,
