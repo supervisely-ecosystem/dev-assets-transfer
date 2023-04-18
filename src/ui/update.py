@@ -495,12 +495,14 @@ def upload_images():
         sly.logger.debug(f"Finished uploading projects in workspace {workspace_name}.")
     if g.STATE.continue_upload:
         sly.logger.debug("Finished uploading images.")
+        uploaded_text.status = "success"
         uploaded_text.text = (
             f"Successfully uploaded {g.STATE.uploaded_annotated_images} annotated images "
             f"and {g.STATE.uploaded_tagged_images} tagged images."
         )
     else:
         sly.logger.debug("Uploading of images was interrupted.")
+        uploaded_text.status = "warning"
         uploaded_text.text = (
             f"Uploading of images was cancelled after uploading {g.STATE.uploaded_annotated_images} annotated images "
             f"and {g.STATE.uploaded_tagged_images} tagged images."
