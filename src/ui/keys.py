@@ -73,7 +73,6 @@ def connect_to_target():
             token=g.STATE.target_api_key,
             ignore_task_id=True,
         )
-        global target_team_id
         g.STATE.target_api.team.get_info_by_name(g.TARGET_TEAM_NAME)
         sly.logger.info("The connection to the Target API was successful.")
 
