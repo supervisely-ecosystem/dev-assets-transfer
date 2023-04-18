@@ -13,6 +13,7 @@ from supervisely.app.widgets import (
 
 import src.globals as g
 import src.ui.team as team
+import src.ui.update as update
 
 instance_select = Select(
     items=[Select.Item(value, label) for label, value in g.INSTANCES.items()],
@@ -101,6 +102,7 @@ def change_instance():
     key_input.enable()
     check_key_button.show()
     team.card.lock()
+    update.card.lock()
     change_instance_button.hide()
 
 

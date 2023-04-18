@@ -76,13 +76,13 @@ def load_data():
     target_team_input.disable()
     change_button.hide()
 
-    update.card.unlock()
     cancel_button.show()
     update.upload_button.hide()
 
     update.team_difference(source_team_id)
 
     if g.STATE.continue_comparsion:
+        update.card.unlock()
         load_button.hide()
         cancel_button.hide()
         refresh_button.show()
