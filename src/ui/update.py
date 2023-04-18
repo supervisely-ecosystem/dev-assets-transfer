@@ -367,11 +367,6 @@ def upload_images():
     cancel_button.show()
     normalize_metadata_checkbox.disable()
 
-    team.team_select.disable()
-    team.target_team_input.disable()
-    team.change_button.disable()
-    team.refresh_button.disable()
-
     upload_button.text = "Updating..."
     uploaded_text.hide()
 
@@ -382,7 +377,9 @@ def upload_images():
     )
 
     keys.card._lock_message = "Updating images..."
+    team.card._lock_message = "Updating images..."
     keys.card.lock()
+    team.card.lock()
 
     with open(g.DIFFERENCES_JSON, "r", encoding="utf-8") as f:
         team_differences = json.load(f)
@@ -527,12 +524,8 @@ def upload_images():
     upload_button.text = "Update data"
     normalize_metadata_checkbox.enable()
 
-    team.team_select.enable()
-    team.target_team_input.enable()
-    team.change_button.enable()
-    team.refresh_button.enable()
-
     keys.card.unlock()
+    team.card.unlock()
 
     uploaded_text.show()
 
