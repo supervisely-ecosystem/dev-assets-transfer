@@ -92,7 +92,9 @@ def team_difference(source_team_id):
     g.STATE.uploaded_annotated_images = g.STATE.uploaded_tagged_images = 0
 
     keys.card._lock_message = "Comparing images..."
+    card._lock_message = "Comparing images..."
     keys.card.lock()
+    card.lock()
 
     annotated_images_text.text = f"Annotated images: {g.STATE.annotated_images}"
     tagged_images_text.text = f"Tagged images: {g.STATE.tagged_images}"
@@ -146,6 +148,10 @@ def team_difference(source_team_id):
     annotated_images_text.hide()
     tagged_images_text.hide()
 
+    card._lock_message = (
+        "Select Team on step 2️⃣ and wait until comparison is finished."
+    )
+    card.unlock()
     keys.card.unlock()
 
     difference_text.text = (
