@@ -168,7 +168,7 @@ def team_difference(source_team_id):
 
 def workspace_difference(
     source_workspace: sly.WorkspaceInfo, target_team_id: int
-) -> defaultdict[str, Any]:
+) -> defaultdict:
     """Calculates difference between source and target workspace.
 
     :param source_workspace: object with information about source workspace.
@@ -176,7 +176,7 @@ def workspace_difference(
     :param target_team_id: id of the target team in Supervisely instance.
     :type target_team_id: int
     :return: defaultdict with information about difference between source and target workspace.
-    :rtype: defaultdict[str, Any]
+    :rtype: defaultdict
     """
     workspace_differences = defaultdict(list)
 
@@ -230,7 +230,7 @@ def workspace_difference(
 
 def project_difference(
     source_project: sly.ProjectInfo, target_workspace_id: int
-) -> defaultdict[str, Any]:
+) -> defaultdict:
     """Calculates difference between source and target project.
 
     :param source_project: object with information about source project.
@@ -238,7 +238,7 @@ def project_difference(
     :param target_workspace_id: id of the target workspace in Supervisely instance.
     :type target_workspace_id: int
     :return: defaultdict with information about difference between source and target project.
-    :rtype: defaultdict[str, Any]
+    :rtype: defaultdict
     """
     project_differences = defaultdict(list)
 
@@ -285,7 +285,7 @@ def project_difference(
 
 def dataset_difference(
     source_dataset: sly.DatasetInfo, target_project_id: int
-) -> defaultdict[str, Any]:
+) -> defaultdict:
     """Calculates difference between source and target dataset, while filtering out images
     that doesn't have bitmap annotation or tag with specified name.
 
@@ -294,7 +294,7 @@ def dataset_difference(
     :param target_project_id: id of the target project in Supervisely instance.
     :type target_project_id: int
     :return: defaultdict with information about difference between source and target dataset.
-    :rtype: defaultdict[str, Any]
+    :rtype: defaultdict
     """
     dataset_name = source_dataset.name
     sly.logger.debug(f"Working on a dataset {dataset_name}.")
