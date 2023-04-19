@@ -3,7 +3,7 @@ import os
 
 from shutil import rmtree
 from collections import defaultdict, namedtuple
-from typing import Any, List, Tuple, Dict
+from typing import List, Tuple, Dict
 
 import supervisely as sly
 
