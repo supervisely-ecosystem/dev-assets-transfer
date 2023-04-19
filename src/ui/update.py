@@ -3,7 +3,7 @@ import os
 
 from shutil import rmtree
 from collections import defaultdict, namedtuple
-from time import perf_counter
+from typing import Any, List, Tuple, Dict
 
 import supervisely as sly
 
@@ -22,6 +22,8 @@ import src.globals as g
 import src.ui.team as team
 import src.ui.keys as keys
 
+
+# Field with checkbox for normalize image metadata.
 normalize_metadata_checkbox = Checkbox(content="Normalize metadata", checked=True)
 normalize_metadata_field = Field(
     title="Normalize image metadata",
@@ -32,30 +34,31 @@ normalize_metadata_field = Field(
     content=normalize_metadata_checkbox,
 )
 
-
+# Container with all text widgets.
 annotated_images_text = Text(
     f"Annotated images: {g.STATE.annotated_images}", status="info"
 )
 tagged_images_text = Text(f"Tagged images: {g.STATE.tagged_images}", status="info")
 difference_text = Text(status="info")
 uploaded_text = Text(status="success")
+comparsion_texts = Container(
+    [difference_text, annotated_images_text, tagged_images_text]
+)
 
 annotated_images_text.hide()
 tagged_images_text.hide()
 difference_text.hide()
 uploaded_text.hide()
 
-comparsion_texts = Container(
-    [difference_text, annotated_images_text, tagged_images_text]
-)
-
+# Flexbox with all buttons.
 upload_button = Button("Update data")
 cancel_button = Button("Cancel", button_type="danger", icon="zmdi zmdi-close-circle-o")
+buttons_flexbox = Flexbox([upload_button, cancel_button])
+
 upload_button.hide()
 cancel_button.hide()
 
-buttons_flexbox = Flexbox([upload_button, cancel_button])
-
+# Progress bar for upload status.
 upload_progress = Progress()
 
 card = Card(
@@ -75,36 +78,29 @@ card = Card(
 card.lock()
 
 
-def measure_time(function: callable) -> callable:
-    def wrapper(*args, **kwargs):
-        start = perf_counter()
-        result = function(*args, **kwargs)
-        end = perf_counter()
-        time = end - start
-        sly.logger.debug(
-            f"TIME -> [{time:.2f} seconds] | FUNCTION -> [{function.__name__}]."
-        )
-        return result
-
-    return wrapper
-
-
-@measure_time
 def team_difference(source_team_id):
-    g.STATE.annotated_images = g.STATE.tagged_images = 0
-    g.STATE.uploaded_annotated_images = g.STATE.uploaded_tagged_images = 0
+    """Calculates difference between source and target teams.
 
+    :param source_team_id: id of the source team in Supervisely instance.
+    :type source_team_id: int
+    """
+    # Resetting all counters (for text widgets).
+    g.STATE.reset_counters()
+
+    # Changing lock messages on other cards.
     keys.card._lock_message = "Comparing images..."
     card._lock_message = "Comparing images..."
     keys.card.lock()
     card.lock()
 
+    # Updating text on widgets and showing them.
     annotated_images_text.text = f"Annotated images: {g.STATE.annotated_images}"
     tagged_images_text.text = f"Tagged images: {g.STATE.tagged_images}"
 
     annotated_images_text.show()
     tagged_images_text.show()
 
+    # Hiding texts with previous comparison and upload results.
     difference_text.hide()
     uploaded_text.hide()
 
@@ -112,6 +108,8 @@ def team_difference(source_team_id):
 
     team_name = g.STATE.target_team_name
     sly.logger.debug(f"Readed team name as {team_name}.")
+
+    # Trying to find team with specified name in target instance.
     target_team = g.STATE.target_api.team.get_info_by_name(team_name)
 
     if target_team:
@@ -120,6 +118,7 @@ def team_difference(source_team_id):
             f"Team {team_name} is found in target instance with ID {target_team_id}."
         )
     else:
+        # If team is not found, it will be created.
         sly.logger.debug(
             f"Team {team_name} is not found in target instance. Will create it."
         )
@@ -128,6 +127,7 @@ def team_difference(source_team_id):
             f"Team {team_name} is created in target instance with ID {target_team_id}."
         )
 
+    # Getting list of workspaces in source team.
     source_workspaces = g.source_api.workspace.get_list(source_team_id)
     sly.logger.debug(
         f"Found {len(source_workspaces)} workspaces in source team, starting workspace comparison."
@@ -148,14 +148,9 @@ def team_difference(source_team_id):
 
     sly.logger.debug(f"Team differences are saved to {g.DIFFERENCES_JSON}.")
 
+    # Hiding in-progress widgets and replacing them with the results.
     annotated_images_text.hide()
     tagged_images_text.hide()
-
-    card._lock_message = (
-        "Select Team on step 2️⃣ and wait until comparison is finished."
-    )
-    card.unlock()
-    keys.card.unlock()
 
     difference_text.text = (
         f"Found {g.STATE.annotated_images} new annotated images "
@@ -163,13 +158,32 @@ def team_difference(source_team_id):
     )
     difference_text.show()
 
+    # Returning lock messages to default.
+    card._lock_message = (
+        "Select Team on step 2️⃣ and wait until comparison is finished."
+    )
+    card.unlock()
+    keys.card.unlock()
 
-@measure_time
-def workspace_difference(source_workspace, target_team_id):
+
+def workspace_difference(
+    source_workspace: sly.WorkspaceInfo, target_team_id: int
+) -> defaultdict[str, Any]:
+    """Calculates difference between source and target workspace.
+
+    :param source_workspace: object with information about source workspace.
+    :type source_workspace: sly.WorkspaceInfo
+    :param target_team_id: id of the target team in Supervisely instance.
+    :type target_team_id: int
+    :return: defaultdict with information about difference between source and target workspace.
+    :rtype: defaultdict[str, Any]
+    """
     workspace_differences = defaultdict(list)
 
     workspace_name = source_workspace.name
     sly.logger.debug(f"Working on a workspace {workspace_name}.")
+
+    # Trying to find workspace with specified name in target team.
     target_workspace = g.STATE.target_api.workspace.get_info_by_name(
         target_team_id, workspace_name
     )
@@ -180,6 +194,7 @@ def workspace_difference(source_workspace, target_team_id):
             f"Workspace {workspace_name} is found in target team with ID {target_workspace_id}."
         )
     else:
+        # If workspace is not found, it will be created.
         sly.logger.debug(
             f"Workspace {workspace_name} is not found in target team. Will create it."
         )
@@ -190,6 +205,7 @@ def workspace_difference(source_workspace, target_team_id):
             f"Workspace {workspace_name} is created in target team with ID {target_workspace_id}."
         )
 
+    # Getting list of projects in source workspace.
     source_projects = g.source_api.project.get_list(source_workspace.id)
     sly.logger.debug(
         f"Found {len(source_projects)} projects in source workspace, starting project comparison."
@@ -212,12 +228,24 @@ def workspace_difference(source_workspace, target_team_id):
     return workspace_differences
 
 
-@measure_time
-def project_difference(source_project, target_workspace_id):
+def project_difference(
+    source_project: sly.ProjectInfo, target_workspace_id: int
+) -> defaultdict[str, Any]:
+    """Calculates difference between source and target project.
+
+    :param source_project: object with information about source project.
+    :type source_project: sly.ProjectInfo
+    :param target_workspace_id: id of the target workspace in Supervisely instance.
+    :type target_workspace_id: int
+    :return: defaultdict with information about difference between source and target project.
+    :rtype: defaultdict[str, Any]
+    """
     project_differences = defaultdict(list)
 
     project_name = source_project.name
     sly.logger.debug(f"Working on a project {project_name}.")
+
+    # Trying to find project with specified name in target workspace.
     target_project = g.STATE.target_api.project.get_info_by_name(
         target_workspace_id, project_name
     )
@@ -228,6 +256,7 @@ def project_difference(source_project, target_workspace_id):
             f"Project {project_name} is found in target workspace with ID {target_project_id}."
         )
     else:
+        # If project is not found, it will be created.
         sly.logger.debug(
             f"Project {project_name} is not found in target workspace. Will create it."
         )
@@ -238,6 +267,7 @@ def project_difference(source_project, target_workspace_id):
             f"Project {project_name} is created in target workspace with ID {target_project_id}."
         )
 
+    # Getting list of datasets in source project.
     source_datasets = g.source_api.dataset.get_list(source_project.id)
     sly.logger.debug(
         f"Found {len(source_datasets)} datasets in source project, starting dataset comparison."
@@ -247,17 +277,29 @@ def project_difference(source_project, target_workspace_id):
             project_differences[dataset.name] = dataset_difference(
                 dataset, target_project_id
             )
-            # pbar.update(1)
 
     sly.logger.debug("Finished datasets comparison.")
 
     return project_differences
 
 
-@measure_time
-def dataset_difference(source_dataset, target_project_id):
+def dataset_difference(
+    source_dataset: sly.DatasetInfo, target_project_id: int
+) -> defaultdict[str, Any]:
+    """Calculates difference between source and target dataset, while filtering out images
+    that doesn't have bitmap annotation or tag with specified name.
+
+    :param source_dataset: object with information about source dataset.
+    :type source_dataset: sly.DatasetInfo
+    :param target_project_id: id of the target project in Supervisely instance.
+    :type target_project_id: int
+    :return: defaultdict with information about difference between source and target dataset.
+    :rtype: defaultdict[str, Any]
+    """
     dataset_name = source_dataset.name
     sly.logger.debug(f"Working on a dataset {dataset_name}.")
+
+    # Trying to find dataset with specified name in target project.
     target_dataset = g.STATE.target_api.dataset.get_info_by_name(
         target_project_id, dataset_name
     )
@@ -268,6 +310,7 @@ def dataset_difference(source_dataset, target_project_id):
             f"Dataset {dataset_name} is found in target project with ID {target_dataset_id}."
         )
     else:
+        # If dataset is not found, it will be created.
         sly.logger.debug(
             f"Dataset {dataset_name} is not found in target project. Will create it."
         )
@@ -279,29 +322,37 @@ def dataset_difference(source_dataset, target_project_id):
             f"Dataset {dataset_name} is created in target project with ID {target_dataset_id}."
         )
 
+    # Getting list of images in source dataset.
     source_images = g.source_api.image.get_list(source_dataset.id)
     sly.logger.debug(f"Found {len(source_images)} images in source dataset.")
 
+    # Getting list of images in target dataset.
     target_images = g.STATE.target_api.image.get_list(target_dataset_id)
     sly.logger.debug(f"Found {len(target_images)} images in target dataset.")
 
+    # Preparing list of file names of images in target dataset.
     target_names = [obj.name for obj in target_images]
 
+    # Filtering out images that are already in target dataset.
     new_images = [obj for obj in source_images if obj.name not in target_names]
 
     sly.logger.debug(f"Found {len(new_images)} new images in dataset {dataset_name}.")
 
+    # Launching function to filter out images that doesn't have bitmap annotation or tag with specified name.
     new_annotated_images, new_tagged_images = filter_images(new_images, source_dataset)
 
+    # Updating counters for annotated and tagged images.
     g.STATE.annotated_images += len(new_annotated_images)
     g.STATE.tagged_images += len(new_tagged_images)
 
     if len(new_annotated_images) > 0:
+        # Updading text in the widget if the number of annotated images was changed.
         annotated_images_text.text = (
             f"Annotated images: {g.STATE.annotated_images} "
             f"(+{len(new_annotated_images)} from {dataset_name})"
         )
     if len(new_tagged_images) > 0:
+        # Updaing text in the widget if the number of tagged images was changed.
         tagged_images_text.text = (
             f"Tagged images: {g.STATE.tagged_images} "
             f"(+{len(new_tagged_images)} from {dataset_name})"
@@ -319,9 +370,21 @@ def dataset_difference(source_dataset, target_project_id):
     return dataset_differences
 
 
-@measure_time
-def filter_images(new_images, source_dataset):
+def filter_images(
+    new_images: List[sly.ImageInfo], source_dataset: sly.DatasetInfo
+) -> Tuple[List[sly.ImageInfo], List[sly.ImageInfo]]:
+    """Filters out images that doesn't have bitmap annotation or tag with specified name.
+
+    :param new_images: list of images that are not in target dataset.
+    :type new_images: List[sly.ImageInfo]
+    :param source_dataset: object with information about source dataset.
+    :type source_dataset: sly.DatasetInfo
+    :return: tuple with two lists of images that have bitmap annotation and tag with specified name.
+    :rtype: Tuple[List[sly.ImageInfo], List[sly.ImageInfo]]
+    """
     sly.logger.debug(f"Starting filtering images in dataset {source_dataset.name}.")
+
+    # Preparing list of annotations for images that are not in target dataset.
     source_annotations = g.source_api.annotation.download_batch(
         source_dataset.id, [image.id for image in new_images]
     )
@@ -334,12 +397,16 @@ def filter_images(new_images, source_dataset):
     tagged_image_ids = []
 
     for annotation_info in source_annotations:
+        # Iterating over annotations and checking if they have bitmap annotation or tag with specified name.
         annotation = annotation_info.annotation
+
         objects = annotation["objects"]
         tags = annotation["tags"]
+
         image_id = annotation_info.image_id
 
         if any(object["geometryType"] == "bitmap" for object in objects):
+            # If image has bitmap annotation, it will be added to the list of annotated images.
             sly.logger.debug(f"Found bitmap annotation in image with ID {image_id}.")
             annotated_image_ids.append(image_id)
 
@@ -347,6 +414,7 @@ def filter_images(new_images, source_dataset):
             sly.logger.debug(f"Found tag annotation in image with ID {image_id}.")
 
             if any(tag["name"] == g.TAG for tag in tags):
+                # If image has tag with specified name, it will be added to the list of tagged images.
                 sly.logger.debug(f"Found tag {g.TAG} in image with ID {image_id}.")
                 tagged_image_ids.append(image_id)
 
@@ -369,6 +437,8 @@ def filter_images(new_images, source_dataset):
 
 @upload_button.click
 def upload_images():
+    """Uploads images from source dataset to target dataset using JSON file with differences between
+    source and target datasets."""
     sly.logger.debug("Starting upload of images.")
 
     g.STATE.continue_upload = True
@@ -389,6 +459,7 @@ def upload_images():
     keys.card.lock()
     team.card.lock()
 
+    # Loading JSON file with differences between source and target datasets.
     with open(g.DIFFERENCES_JSON, "r", encoding="utf-8") as f:
         team_differences = json.load(f)
 
@@ -410,6 +481,7 @@ def upload_images():
                     for dataset_name, dataset in datasets.items():
                         sly.logger.debug(f"Working on a dataset {dataset_name}.")
 
+                        # Getting IDs of source and target datasets from JSON file.
                         source_dataset_id = dataset["source"][0]
                         target_dataset_id = dataset["target"][0]
 
@@ -417,9 +489,12 @@ def upload_images():
                             f"Source dataset ID: {source_dataset_id}. Target dataset ID: {target_dataset_id}."
                         )
 
+                        # Getting information about annotated images, which are going to be uploaded.
                         annotated_images = get_image_data(
                             dataset["annotated_images"], dataset_name
                         )
+
+                        # Getting information about tagged images, which are going to be uploaded.
                         tagged_images = get_image_data(
                             dataset["tagged_images"], dataset_name
                         )
@@ -430,6 +505,7 @@ def upload_images():
                             )
                             continue
 
+                        # Downloading annotated and tagged images from source dataset.
                         download_images(
                             annotated_images, source_dataset_id, dataset_name
                         )
@@ -444,12 +520,14 @@ def upload_images():
                             f"Finished downloading tagged images for dataset {dataset_name}."
                         )
 
+                        # Rettrieving project meta from source instance and updating it in target instance.
                         project_meta = update_project_meta(
                             source_dataset_id, target_dataset_id
                         )
 
                         sly.logger.debug("Retrieved and updated project meta.")
 
+                        # Downloading annotations for annotated and tagged images.
                         annotated_annotations = download_annotations(
                             source_dataset_id, annotated_images.ids, project_meta
                         )
@@ -466,6 +544,7 @@ def upload_images():
                             f"Downloaded {len(tagged_annotations)} tagged annotations."
                         )
 
+                        # Updating counter for annotated and tagged images.
                         g.STATE.uploaded_annotated_images += (
                             upload_images_with_annotations(
                                 annotated_images,
@@ -496,6 +575,7 @@ def upload_images():
                             f"Finished uploading images for dataset {dataset_name}."
                         )
 
+                        # Removing directory with downloaded images after uploading them.
                         rmtree(os.path.join(g.IMAGES_DIR, dataset_name))
                         sly.logger.debug(
                             f"Removed directory {os.path.join(g.IMAGES_DIR, dataset_name)} after uploading images."
@@ -512,6 +592,7 @@ def upload_images():
             break
         sly.logger.debug(f"Finished uploading projects in workspace {workspace_name}.")
     if g.STATE.continue_upload:
+        # If uploading was not interrupted, show success message.
         sly.logger.debug("Finished uploading images.")
         uploaded_text.status = "success"
         uploaded_text.text = (
@@ -519,6 +600,7 @@ def upload_images():
             f"and {g.STATE.uploaded_tagged_images} tagged images."
         )
     else:
+        # If uploading was interrupted, show warning message.
         sly.logger.debug("Uploading of images was interrupted.")
         uploaded_text.status = "warning"
         uploaded_text.text = (
@@ -538,8 +620,18 @@ def upload_images():
     uploaded_text.show()
 
 
-@measure_time
-def download_images(images, source_dataset_id, dataset_name):
+def download_images(
+    images: List[sly.ImageInfo], source_dataset_id: int, dataset_name: str
+):
+    """Download images from the source dataset to the local directory.
+
+    :param images: list of objects with information about images
+    :type images: List[sly.ImageInfo]
+    :param source_dataset_id: ID of the source dataset in Supervisely instance
+    :type source_dataset_id: int
+    :param dataset_name: name of the dataset (for convinient logging)
+    :type dataset_name: str
+    """
     sly.logger.debug(f"Starting download of images from dataset {dataset_name}.")
 
     for batch_names, batch_paths in zip(
@@ -554,13 +646,25 @@ def download_images(images, source_dataset_id, dataset_name):
     sly.logger.debug(f"Finished download of images from dataset {dataset_name}.")
 
 
-def update_project_meta(source_dataset_id, target_dataset_id):
+def update_project_meta(
+    source_dataset_id: int, target_dataset_id: int
+) -> sly.ProjectMeta:
+    """Updates the meta in target instance with the meta from source instance. Returns the updated meta.
+
+    :param source_dataset_id: the id of the source dataset
+    :type source_dataset_id: int
+    :param target_dataset_id: the id of the target dataset
+    :type target_dataset_id: int
+    :return: object with meta information about the project
+    :rtype: sly.ProjectMeta
+    """
     source_project_id = g.source_api.dataset.get_info_by_id(
         source_dataset_id
     ).project_id
 
     sly.logger.debug(f"Retrieved source project ID: {source_project_id}.")
 
+    # Retrieving and converting project meta from the source instance.
     meta_json = g.source_api.project.get_meta(source_project_id)
     project_meta = sly.ProjectMeta.from_json(meta_json)
 
@@ -574,6 +678,7 @@ def update_project_meta(source_dataset_id, target_dataset_id):
 
     sly.logger.debug(f"Retrieved target project ID: {target_project_id}.")
 
+    # Updating project meta in target instance.
     g.STATE.target_api.project.update_meta(target_project_id, project_meta)
 
     sly.logger.debug(
@@ -583,20 +688,35 @@ def update_project_meta(source_dataset_id, target_dataset_id):
     return project_meta
 
 
-@measure_time
-def download_annotations(source_dataset_id, image_ids, project_meta):
+def download_annotations(
+    source_dataset_id: int, image_ids: List[int], project_meta: sly.ProjectMeta
+) -> List[sly.Annotation]:
+    """Download annotations for the images in the source dataset.
+
+    :param source_dataset_id: the id of the source dataset
+    :type source_dataset_id: int
+    :param image_ids: list of ids of images
+    :type image_ids: List[int]
+    :param project_meta: object with meta information about the project
+    :type project_meta: sly.ProjectMeta
+    :return: list of objects with annotations for the images
+    :rtype: List[sly.Annotation]
+    """
     sly.logger.debug(
         f"Starting download of annotations from dataset with id {source_dataset_id}."
     )
 
+    # Retrieving AnnotationInfo objects for the images.
     annotation_infos = g.source_api.annotation.download_batch(
         source_dataset_id, image_ids
     )
 
+    # Converting AnnotationInfo objects to JSON.
     annotation_jsons = [
         annotation_info.annotation for annotation_info in annotation_infos
     ]
 
+    # Creating Annotation objects from JSON.
     annotations = [
         sly.Annotation.from_json(json, project_meta) for json in annotation_jsons
     ]
@@ -608,10 +728,25 @@ def download_annotations(source_dataset_id, image_ids, project_meta):
     return annotations
 
 
-@measure_time
 def upload_images_with_annotations(
-    images, target_dataset_id, dataset_name, annotations
-):
+    images: List[sly.ImageInfo],
+    target_dataset_id: int,
+    dataset_name: str,
+    annotations: List[sly.Annotation],
+) -> int:
+    """Upload images with annotations to the target dataset.
+
+    :param images: list of objects with information about images
+    :type images: List[sly.ImageInfo]
+    :param target_dataset_id: ID of the target dataset in Supervisely instance
+    :type target_dataset_id: int
+    :param dataset_name: name of the dataset (for convinient logging)
+    :type dataset_name: str
+    :param annotations: list of objects with annotations for the images to be uploaded
+    :type annotations: List[sly.Annotation]
+    :return: number of uploaded images
+    :rtype: int
+    """
     sly.logger.debug(f"Starting upload of images to dataset {dataset_name}.")
 
     uploaded_image_ids = []
@@ -625,6 +760,7 @@ def upload_images_with_annotations(
             target_dataset_id, batch_names, batch_paths, metas=batch_metas
         )
 
+        # Getting list of image ids for the uploaded images.
         uploaded_batch_ids = [image.id for image in uploaded_batch]
         uploaded_image_ids.extend(uploaded_batch_ids)
 
@@ -633,6 +769,7 @@ def upload_images_with_annotations(
         )
     sly.logger.debug(f"Finished upload of images to dataset {dataset_name}.")
 
+    # Uploading annotations for the uploaded images.
     g.STATE.target_api.annotation.upload_anns(uploaded_image_ids, annotations)
 
     sly.logger.debug(
@@ -642,8 +779,16 @@ def upload_images_with_annotations(
     return len(uploaded_image_ids)
 
 
-@measure_time
-def get_image_data(images, dataset_name):
+def get_image_data(images: List[sly.ImageInfo], dataset_name: str) -> namedtuple:
+    """_summary_
+
+    :param images: list of objects with information about images
+    :type images: List[sly.ImageInfo]
+    :param dataset_name: name of the dataset
+    :type dataset_name: str
+    :return: ImagesData namedtuple, containing lists of image ids, names, paths and metas
+    :rtype: namedtuple
+    """
     image_ids = [image[g.INDICES["images_ids"]] for image in images]
     image_names = [image[g.INDICES["image_names"]] for image in images]
     image_metas = [image[g.INDICES["image_metas"]] for image in images]
@@ -651,10 +796,12 @@ def get_image_data(images, dataset_name):
     sly.logger.debug(f"Readed {len(image_ids)} image IDs and names.")
 
     if g.STATE.normalize_image_metadata:
+        # Normalizing image metadata if checkbox is checked.
         image_metas = normalize_image_metadata(image_metas)
         sly.logger.debug(f"Normalized {len(image_metas)} image metas.")
 
     if len(image_ids) == len(image_names) == len(image_metas):
+        # Checking if all three lists have the same length.
         sly.logger.debug("All three lists have the same length.")
     else:
         sly.logger.error(
@@ -667,6 +814,7 @@ def get_image_data(images, dataset_name):
         )
         return
 
+    # Creating list of paths to the images in the local directory.
     paths = [
         os.path.join(g.IMAGES_DIR, dataset_name, image_name)
         for image_name in image_names
@@ -674,17 +822,29 @@ def get_image_data(images, dataset_name):
     os.makedirs(os.path.join(g.IMAGES_DIR, dataset_name), exist_ok=True)
 
     ImagesData = namedtuple("ImagesData", ["ids", "names", "paths", "metas"])
+
+    # Creating namedtuple with the lists of image ids, names, paths and metas.
     images_data = ImagesData(image_ids, image_names, paths, image_metas)
 
     return images_data
 
 
-@measure_time
-def normalize_image_metadata(image_metas):
-    # TARGET_METADATA_FIELDS = ["URL", "License", "Author"]
-    # SOURCE_URL_FIELDS = ["Flickr image URL", "Pexels image URL", "Source URL"]
-    # SOURCE_AUTHOR_FIELDS = ["Flickr owner id", "Photographer name"]
-    # SOURCE_LICENSE_FIELDS = ["License", "license", None]
+def normalize_image_metadata(image_metas: List[Dict]) -> List[Dict]:
+    """Updates the image metadata dict to match the format of the target dataset (Assets).
+
+    :param image_metas: list of dicts with image metadata
+    :type image_metas: List[Dict]
+    :return: updated list of dicts with image metadata
+    :rtype: List[Dict]
+
+    :Assets instance metadtata format:
+    TARGET_METADATA_FIELDS = ["URL", "License", "Author"]
+
+    :Possible metadata fields in the source dataset:
+    SOURCE_URL_FIELDS = ["Flickr image URL", "Pexels image URL", "Source URL"]
+    SOURCE_AUTHOR_FIELDS = ["Flickr owner id", "Photographer name"]
+    SOURCE_LICENSE_FIELDS = ["License", "license", None]
+    """
 
     new_image_metas = []
 
@@ -710,5 +870,6 @@ def normalize_image_metadata(image_metas):
 
 @cancel_button.click
 def cancel():
+    """Handles click on the cancel button. Stops the upload process."""
     g.STATE.continue_upload = False
     cancel_button.hide()

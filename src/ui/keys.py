@@ -15,13 +15,16 @@ import src.globals as g
 import src.ui.team as team
 import src.ui.update as update
 
+# Instance selector.
 instance_select = Select(
     items=[Select.Item(value, label) for label, value in g.INSTANCES.items()],
     placeholder="Select target instance",
 )
 
+# Input widget for the API key, characters will be hidden.
 key_input = Input(type="password")
 
+# Flexbox for all buttons.
 check_key_button = Button("Check connection")
 change_instance_button = Button(
     "Change instance", icon="zmdi zmdi-swap-vertical-circle"
@@ -58,13 +61,15 @@ card = Card(
 
 @check_key_button.click
 def connect_to_target():
-    """Checks the connection to the Target API with the specified API key."""
+    """Checks the connection to the selected instance with specified API key."""
     check_result.hide()
 
     if not g.STATE.target_api_key:
+        # Reading the API key from the input widget, if it was not loaded from the team files.
         g.STATE.target_api_key = key_input.get_value()
 
     if not g.STATE.instance:
+        # Reading the instance address from the select widget, if it was not loaded from the team files.
         g.STATE.instance = instance_select.get_value()
 
     try:
@@ -85,6 +90,7 @@ def connect_to_target():
         return
 
     if g.STATE.from_team_files:
+        # If the app was started from the team files, making changes in the GUI state.
         key_input.set_value(g.STATE.target_api_key)
         instance_select.hide()
         change_instance_button.hide()
@@ -106,6 +112,7 @@ def connect_to_target():
 
 @change_instance_button.click
 def change_instance():
+    """Handles the change instance button click event."""
     instance_select.enable()
     key_input.enable()
     check_key_button.show()
@@ -115,6 +122,7 @@ def change_instance():
 
 
 g.key_from_file()
+# Trying to load the API key and instance address from the team files.
 if g.STATE.target_api_key and g.STATE.instance:
     g.STATE.from_team_files = True
     connect_to_target()
