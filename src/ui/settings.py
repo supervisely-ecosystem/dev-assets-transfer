@@ -72,7 +72,7 @@ def default_settings(is_checked: bool):
     :type is_checked: bool
     """
     if is_checked:
-        annotation_type_field.hide()
+        filter_settings_field.hide()
         normalize_metadata_field.hide()
 
         g.STATE.default_settings = True
@@ -83,7 +83,7 @@ def default_settings(is_checked: bool):
         compare.target_team_input.set_value(g.DEFAULT_TEAM_NAME)
 
     else:
-        annotation_type_field.show()
+        filter_settings_field.show()
         normalize_metadata_field.show()
 
         g.STATE.default_settings = False
