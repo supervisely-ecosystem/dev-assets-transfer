@@ -32,7 +32,7 @@ source_api: sly.Api = sly.Api.from_env()
 TEAM_ID = sly.io.env.team_id()
 
 # Default settings for uploading primitives to Assets.
-DEFAULT_TEAM_NAME = "primitives_2104"
+DEFAULT_TEAM_NAME = "primitives"
 DEFAULT_TAG_NAME = "inference"
 DEFAULT_ANNOTATION_TYPES = ["bitmap"]
 
