@@ -12,7 +12,7 @@ from supervisely.app.widgets import (
 )
 
 import src.globals as g
-import src.ui.team as team
+import src.ui.compare as compare
 import src.ui.update as update
 
 # Instance selector.
@@ -78,7 +78,7 @@ def connect_to_target():
             token=g.STATE.target_api_key,
             ignore_task_id=True,
         )
-        g.STATE.target_api.team.get_info_by_name(g.TARGET_TEAM_NAME)
+        g.STATE.target_api.team.get_info_by_name(g.DEFAULT_TEAM_NAME)
         sly.logger.info("The connection to the Target API was successful.")
 
     except (ValueError, requests.exceptions.HTTPError):
@@ -107,7 +107,7 @@ def connect_to_target():
     instance_select.disable()
     key_input.disable()
     check_key_button.hide()
-    team.card.unlock()
+    compare.card.unlock()
 
 
 @change_instance_button.click
@@ -116,7 +116,7 @@ def change_instance():
     instance_select.enable()
     key_input.enable()
     check_key_button.show()
-    team.card.lock()
+    update.card.lock()
     update.card.lock()
     change_instance_button.hide()
 

@@ -14,25 +14,13 @@ from supervisely.app.widgets import (
     Progress,
     Button,
     Flexbox,
-    Checkbox,
-    Field,
 )
 
 import src.globals as g
-import src.ui.team as team
+import src.ui.settings as settings
+import src.ui.compare as compare
 import src.ui.keys as keys
 
-
-# Field with checkbox for normalize image metadata.
-normalize_metadata_checkbox = Checkbox(content="Normalize metadata", checked=True)
-normalize_metadata_field = Field(
-    title="Normalize image metadata",
-    description=(
-        "If checked the images metadata will be normalized in accordance "
-        "with the requirements of Assets instance."
-    ),
-    content=normalize_metadata_checkbox,
-)
 
 # Container with all text widgets.
 annotated_images_text = Text(
@@ -62,17 +50,16 @@ cancel_button.hide()
 upload_progress = Progress()
 
 card = Card(
-    title="3️⃣ Update data",
+    title="4️⃣ Update data",
     description="Images from the source team will be filtered and uploaded to the target team.",
     content=Container(
         [
-            normalize_metadata_field,
             buttons_flexbox,
             upload_progress,
             uploaded_text,
         ]
     ),
-    lock_message="Select Team on step 2️⃣ and wait until comparison is finished.",
+    lock_message="Select Team on step 3️⃣ and wait until comparison is finished.",
 )
 
 card.lock()
@@ -86,19 +73,52 @@ def team_difference(source_team_id):
     """
     # Resetting all counters (for text widgets).
     g.STATE.reset_counters()
+    compare.warning_message.hide()
+
+    sly.logger.debug(
+        f"Comparsion starting. Filter by annotation type: {g.STATE.filter_by_annotation_type}. "
+        f"Filter by tag name: {g.STATE.filter_by_tag_name}."
+    )
+    if g.STATE.default_settings:
+        sly.logger.debug("Using the default settings for comparison.")
+        g.STATE.tag_name = g.DEFAULT_TAG_NAME
+        g.STATE.annotation_types = g.DEFAULT_ANNOTATION_TYPES
+    else:
+        sly.logger.debug("Using custom settings for comparison.")
+        if g.STATE.filter_by_annotation_type:
+            sly.logger.debug("Filtering by annotation type is enabled.")
+            g.STATE.annotation_types = settings.annotation_type_select.get_value()
+            if not g.STATE.annotation_types:
+                sly.logger.debug("No annotation types selected.")
+                compare.warning_message.text = "No annotation types selected."
+                compare.warning_message.status = "error"
+                compare.warning_message.show()
+                return
+        if g.STATE.filter_by_tag_name:
+            sly.logger.debug("Filtering by tag name is enabled.")
+            g.STATE.tag_name = settings.tag_name_input.get_value()
+            if not g.STATE.tag_name:
+                compare.warning_message.text = "No tag name was entered."
+                compare.warning_message.status = "error"
+                compare.warning_message.show()
+                return
 
     # Changing lock messages on other cards.
     keys.card._lock_message = "Comparing images..."
+    settings.card._lock_message = "Comparing images..."
     card._lock_message = "Comparing images..."
     keys.card.lock()
+    settings.card.lock()
     card.lock()
 
     # Updating text on widgets and showing them.
     annotated_images_text.text = f"Annotated images: {g.STATE.annotated_images}"
     tagged_images_text.text = f"Tagged images: {g.STATE.tagged_images}"
 
-    annotated_images_text.show()
-    tagged_images_text.show()
+    if g.STATE.filter_by_annotation_type:
+        annotated_images_text.show()
+    if g.STATE.filter_by_tag_name:
+        tagged_images_text.show()
 
     # Hiding texts with previous comparison and upload results.
     difference_text.hide()
@@ -152,10 +172,13 @@ def team_difference(source_team_id):
     annotated_images_text.hide()
     tagged_images_text.hide()
 
-    difference_text.text = (
-        f"Found {g.STATE.annotated_images} new annotated images "
-        f"and {g.STATE.tagged_images} new tagged images."
-    )
+    if not g.STATE.filter_by_annotation_type and not g.STATE.filter_by_tag_name:
+        difference_text.text = f"Found {g.STATE.annotated_images} new images."
+    else:
+        difference_text.text = (
+            f"Found {g.STATE.annotated_images} new annotated images "
+            f"and {g.STATE.tagged_images} new tagged images."
+        )
     difference_text.show()
 
     # Returning lock messages to default.
@@ -163,6 +186,7 @@ def team_difference(source_team_id):
         "Select Team on step 2️⃣ and wait until comparison is finished."
     )
     card.unlock()
+    settings.card.unlock()
     keys.card.unlock()
 
 
@@ -210,9 +234,9 @@ def workspace_difference(
     sly.logger.debug(
         f"Found {len(source_projects)} projects in source workspace, starting project comparison."
     )
-    team.compare_progress.show()
+    compare.compare_progress.show()
 
-    with team.compare_progress(
+    with compare.compare_progress(
         message=f"Comparing projects in workspace {source_workspace.name}...",
         total=len(source_projects),
     ) as pbar:
@@ -339,24 +363,31 @@ def dataset_difference(
     sly.logger.debug(f"Found {len(new_images)} new images in dataset {dataset_name}.")
 
     # Launching function to filter out images that doesn't have bitmap annotation or tag with specified name.
-    new_annotated_images, new_tagged_images = filter_images(new_images, source_dataset)
-
-    # Updating counters for annotated and tagged images.
-    g.STATE.annotated_images += len(new_annotated_images)
-    g.STATE.tagged_images += len(new_tagged_images)
-
-    if len(new_annotated_images) > 0:
-        # Updading text in the widget if the number of annotated images was changed.
-        annotated_images_text.text = (
-            f"Annotated images: {g.STATE.annotated_images} "
-            f"(+{len(new_annotated_images)} from {dataset_name})"
+    if g.STATE.filter_by_annotation_type or g.STATE.filter_by_tag_name:
+        new_annotated_images, new_tagged_images = filter_images(
+            new_images, source_dataset
         )
-    if len(new_tagged_images) > 0:
-        # Updaing text in the widget if the number of tagged images was changed.
-        tagged_images_text.text = (
-            f"Tagged images: {g.STATE.tagged_images} "
-            f"(+{len(new_tagged_images)} from {dataset_name})"
-        )
+
+        # Updating counters for annotated and tagged images.
+        g.STATE.annotated_images += len(new_annotated_images)
+        g.STATE.tagged_images += len(new_tagged_images)
+
+        if len(new_annotated_images) > 0:
+            # Updading text in the widget if the number of annotated images was changed.
+            annotated_images_text.text = (
+                f"Annotated images: {g.STATE.annotated_images} "
+                f"(+{len(new_annotated_images)} from {dataset_name})"
+            )
+        if len(new_tagged_images) > 0:
+            # Updaing text in the widget if the number of tagged images was changed.
+            tagged_images_text.text = (
+                f"Tagged images: {g.STATE.tagged_images} "
+                f"(+{len(new_tagged_images)} from {dataset_name})"
+            )
+
+    else:
+        new_annotated_images = new_images
+        new_tagged_images = []
 
     dataset_differences = {
         "source": source_dataset,
@@ -405,17 +436,23 @@ def filter_images(
 
         image_id = annotation_info.image_id
 
-        if any(object["geometryType"] == "bitmap" for object in objects):
+        if any(
+            object["geometryType"] in g.STATE.annotation_types for object in objects
+        ):
             # If image has bitmap annotation, it will be added to the list of annotated images.
-            sly.logger.debug(f"Found bitmap annotation in image with ID {image_id}.")
+            sly.logger.debug(
+                f"Found annotation with correct type in image with ID {image_id}."
+            )
             annotated_image_ids.append(image_id)
 
         elif tags:
             sly.logger.debug(f"Found tag annotation in image with ID {image_id}.")
 
-            if any(tag["name"] == g.TAG for tag in tags):
+            if any(tag["name"] == g.STATE.tag_name for tag in tags):
                 # If image has tag with specified name, it will be added to the list of tagged images.
-                sly.logger.debug(f"Found tag {g.TAG} in image with ID {image_id}.")
+                sly.logger.debug(
+                    f"Found tag {g.STATE.tag_name} in image with ID {image_id}."
+                )
                 tagged_image_ids.append(image_id)
 
     sly.logger.debug(f"Finished filtering images in dataset {source_dataset.name}.")
@@ -443,21 +480,27 @@ def upload_images():
 
     g.STATE.continue_upload = True
     cancel_button.show()
-    normalize_metadata_checkbox.disable()
 
     upload_button.text = "Updating..."
     uploaded_text.hide()
 
-    g.STATE.normalize_image_metadata = normalize_metadata_checkbox.is_checked()
+    if g.STATE.default_settings:
+        g.STATE.normalize_image_metadata = True
+    else:
+        g.STATE.normalize_image_metadata = (
+            settings.normalize_metadata_checkbox.is_checked()
+        )
 
     sly.logger.debug(
         f"Normalize image metadata is set to {g.STATE.normalize_image_metadata}."
     )
 
     keys.card._lock_message = "Updating images..."
-    team.card._lock_message = "Updating images..."
+    settings.card._lock_message = "Updating images..."
+    compare.card._lock_message = "Updating images..."
     keys.card.lock()
-    team.card.lock()
+    settings.card.lock()
+    compare.card.lock()
 
     # Loading JSON file with differences between source and target datasets.
     with open(g.DIFFERENCES_JSON, "r", encoding="utf-8") as f:
@@ -595,6 +638,12 @@ def upload_images():
         # If uploading was not interrupted, show success message.
         sly.logger.debug("Finished uploading images.")
         uploaded_text.status = "success"
+
+        if not g.STATE.filter_by_annotation_type and not g.STATE.filter_by_tag_name:
+            uploaded_text.text = (
+                f"Successfully uploaded {g.STATE.uploaded_annotated_images} images."
+            )
+
         uploaded_text.text = (
             f"Successfully uploaded {g.STATE.uploaded_annotated_images} annotated images "
             f"and {g.STATE.uploaded_tagged_images} tagged images."
@@ -603,6 +652,13 @@ def upload_images():
         # If uploading was interrupted, show warning message.
         sly.logger.debug("Uploading of images was interrupted.")
         uploaded_text.status = "warning"
+
+        if not g.STATE.filter_by_annotation_type and not g.STATE.filter_by_tag_name:
+            uploaded_text.text = (
+                f"Uploading of images was cancelled after uploading "
+                f"{g.STATE.uploaded_annotated_images} images."
+            )
+
         uploaded_text.text = (
             f"Uploading of images was cancelled after uploading {g.STATE.uploaded_annotated_images} annotated images "
             f"and {g.STATE.uploaded_tagged_images} tagged images."
@@ -612,10 +668,10 @@ def upload_images():
     upload_button.hide()
     cancel_button.hide()
     upload_button.text = "Update data"
-    normalize_metadata_checkbox.enable()
 
     keys.card.unlock()
-    team.card.unlock()
+    settings.card.unlock()
+    compare.card.unlock()
 
     uploaded_text.show()
 

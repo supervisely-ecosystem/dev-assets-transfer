@@ -24,13 +24,14 @@ team_select = SelectTeam(default_id=g.TEAM_ID)
 
 # Field with input for target team name.
 target_team_input = Input(
-    value=g.TARGET_TEAM_NAME, minlength=1, placeholder="Enter target team name"
+    g.DEFAULT_TEAM_NAME, minlength=1, placeholder="Enter target team name"
 )
 target_team_field = Field(
     target_team_input,
     "Target team name",
     "Enter the name of the team in the target instance to which the data will be uploaded.",
 )
+target_team_field.hide()
 
 # Flexbox with all buttons.
 load_button = Button("Compare data")
@@ -46,7 +47,7 @@ buttons_flexbox = Flexbox([load_button, cancel_button, change_button, refresh_bu
 compare_progress = Progress()
 
 card = Card(
-    title="2️⃣ Compare data",
+    title="3️⃣ Compare data",
     description="Select the source team, enter the target team name and launch the comparison.",
     content=Container(
         [
