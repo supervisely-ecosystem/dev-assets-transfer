@@ -28,13 +28,13 @@ This app is supposed to be one of the stages of working with datasets after uplo
 
 
 # Preparation
-To use this app, you need to obtain a Supervisely API key. To do this, you need to log into your account and head to your account settings page. Then you'll need to go to "API Token" tab, and copy it from there. Remember, do not share your API Token to anyone. 
+To use this app, you need to obtain a Supervisely API key from the account you want to transfer data to. To do this, you need to log into your account and head to your account settings page. Then you'll need to go to "API Token" tab, and copy it from there. Remember, do not share your API Token to anyone. 
 
 You have two options to use your API key: you can use team files to store a `.env` file with the API key or you can enter the API key directly in the app GUI. Using team files is recommended as it is more convenient and faster, but you can choose the option that is more suitable for you.<br>
 
 ## Using team files
 1. Create a .env file with the following content:<br>
-```TARGET_SERVER_ADDRESS="https://dev.supervise.ly/"``` <br>
+```TARGET_SERVER_ADDRESS="URL-TO-TARGET-INSTANCE"``` <br>
 ```TARGET_API_TOKEN="........"```
 2. Upload the .env file to the team files.<br>
 3. Right-click on the .env file, select "Run app" and choose the "Transfer Images between Instances" app.<br>
@@ -50,7 +50,7 @@ Now you can use the app. Note that in this case, you will need to enter the API 
 
 0. Run the application
 
-1. If you haven't launched the app from the `.env` file, enter the API Token and Instance you need manually (See <a href="#Preparation">Preparation</a> section)
+1. If you haven't launched the app from the `.env` file, enter the API Token manually and select the Instance you need (See <a href="#Preparation">Preparation</a> section)
 <img src="https://user-images.githubusercontent.com/115161827/234904969-74a93aad-4dac-4815-a57e-aae55081b7ab.png" />
 
 2. If you want to transfer images to Assets instance, then leave the `Use default settings` box checked. Otherwise, uncheck it and configure the app to your needs
@@ -58,7 +58,7 @@ Now you can use the app. Note that in this case, you will need to enter the API 
 
 3. Select the team you want to upload images from, enter the name of the target team and click `Compare data`
 <img src="https://user-images.githubusercontent.com/115161827/234905257-d42e13b3-7a7e-4438-9fa1-016f26b5fd18.png" />
-Keep in mind that the name of a destination team should be original, otherwise an application would not work
+Keep in mind that the name of a destination team should be unique, otherwise an application would not work
 
 4. Finally, click `Update data`
 <img src="https://user-images.githubusercontent.com/115161827/234905363-54478677-8f84-423b-a4c0-e50498abbb23.png" />
