@@ -1,6 +1,7 @@
 import json
 import os
 
+from datetime import datetime
 from shutil import rmtree
 from collections import defaultdict, namedtuple
 from typing import List, Tuple, Dict
@@ -52,13 +53,7 @@ upload_progress = Progress()
 card = Card(
     title="4️⃣ Update data",
     description="Images from the source team will be filtered and uploaded to the target team.",
-    content=Container(
-        [
-            buttons_flexbox,
-            upload_progress,
-            uploaded_text,
-        ]
-    ),
+    content=Container([buttons_flexbox, upload_progress, uploaded_text]),
     lock_message="Select Team on step 3️⃣ and wait until comparison is finished.",
 )
 
@@ -273,6 +268,48 @@ def project_difference(
     target_project = g.STATE.target_api.project.get_info_by_name(
         target_workspace_id, project_name
     )
+
+    if g.STATE.default_settings:
+        source_project_meta_json = g.source_api.project.get_meta(source_project.id)
+        source_project_meta = sly.ProjectMeta.from_json(source_project_meta_json)
+        class_titles = [obj_class.name for obj_class in source_project_meta.obj_classes]
+
+        workspace_name = g.source_api.workspace.get_info_by_id(
+            source_project.workspace_id
+        ).name
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+        error = None
+
+        if len(class_titles) > 1:
+            sly.logger.error(
+                f"Default settings are enabled, but project {project_name} has more than one class."
+            )
+            error = "Project has more than one class."
+
+        elif len(class_titles) == 1:
+            class_name = str(class_titles[0]).lower()
+            unified_class_name = class_name.rsplit("_", 1)[0]
+            unified_project_name = project_name.replace(" ", "_").lower()
+
+            sly.logger.debug(
+                f"Checking if unified class name {unified_class_name} is equal "
+                f"to unified project name {unified_project_name}."
+            )
+
+            if unified_class_name != unified_project_name:
+                error = "Class name is incorrect."
+                sly.logger.error(
+                    "Unified class name is not equal to unified project name."
+                )
+
+        if error:
+            error_report = {
+                "timestamp": timestamp,
+                "project_name": project_name,
+                "error": error,
+            }
+            g.STATE.error_report[workspace_name].append(error_report)
 
     if target_project:
         target_project_id = target_project.id

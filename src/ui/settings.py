@@ -1,4 +1,11 @@
-from supervisely.app.widgets import Card, Field, Checkbox, Container, Select, Input
+from supervisely.app.widgets import (
+    Card,
+    Field,
+    Checkbox,
+    Container,
+    Select,
+    Input,
+)
 
 import src.globals as g
 import src.ui.compare as compare
@@ -57,7 +64,11 @@ card = Card(
     title="2️⃣ Settings",
     description="Settings for data comparsion and update.",
     content=Container(
-        [default_settings_field, filter_settings_field, normalize_metadata_field]
+        [
+            default_settings_field,
+            filter_settings_field,
+            normalize_metadata_field,
+        ]
     ),
 )
 

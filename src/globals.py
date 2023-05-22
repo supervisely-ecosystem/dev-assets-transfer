@@ -1,4 +1,5 @@
 import os
+from collections import defaultdict
 
 import supervisely as sly
 
@@ -38,6 +39,7 @@ DEFAULT_ANNOTATION_TYPES = ["bitmap"]
 
 # Path to the JSON file which is generated after comparsion of the teams is finished.
 DIFFERENCES_JSON = os.path.join(TMP_DIR, "team_differences.json")
+ERROR_JSON = os.path.join(TMP_DIR, "error.json")
 
 BATCH_SIZE = 100
 GEOMETRIES = ["bitmap", "polygon", "polyline", "rectangle"]
@@ -82,12 +84,16 @@ class State:
         # Annotation types for filtering images.
         self.annotation_types = []
 
+        self.error_report = defaultdict(list)
+
     def reset_counters(self):
         """Resets counters for GUI widgets."""
         self.annotated_images = 0
         self.tagged_images = 0
         self.uploaded_annotated_images = 0
         self.uploaded_tagged_images = 0
+
+        self.error_report.clear()
 
 
 STATE = State()

@@ -1,3 +1,5 @@
+import json
+
 import supervisely as sly
 
 from supervisely.app.widgets import (
@@ -10,6 +12,7 @@ from supervisely.app.widgets import (
     Input,
     Progress,
     Field,
+    FileThumbnail,
 )
 
 import src.globals as g
@@ -18,6 +21,16 @@ import src.ui.update as update
 # Message, that will shown if any error occurs.
 warning_message = Text(status="warning")
 warning_message.hide()
+
+error_message = Text(
+    status="error",
+    text="There were errors during comparsion. "
+    "Please check attached file, fix the errors and try again.",
+)
+error_message.hide()
+
+error_file = FileThumbnail()
+error_file.hide()
 
 # Team selector.
 team_select = SelectTeam(default_id=g.TEAM_ID)
@@ -57,6 +70,8 @@ card = Card(
             warning_message,
             compare_progress,
             update.comparsion_texts,
+            error_message,
+            error_file,
         ],
         direction="vertical",
     ),
@@ -71,6 +86,8 @@ def load_data():
     g.STATE.continue_comparsion = True
 
     warning_message.hide()
+    error_file.hide()
+    error_message.hide()
 
     # Reading team ID and target team name from the widgets.
     source_team_id = team_select.get_selected_id()
@@ -93,12 +110,33 @@ def load_data():
     update.team_difference(source_team_id)
 
     if g.STATE.continue_comparsion:
-        # If comparsion finished successfully.
-        update.card.unlock()
+        sly.logger.debug("Comparsion was finished.")
+
+        if g.STATE.error_report:
+            sly.logger.debug(f"Report contains {len(g.STATE.error_report)} errors.")
+
+            with open(g.ERROR_JSON, "w", encoding="utf-8") as f:
+                json.dump(g.STATE.error_report, f, ensure_ascii=False, indent=4)
+
+            # Upload error file to team files.
+            dst = "/images-transfer/error.json"
+            file_info = g.source_api.file.upload(g.TEAM_ID, g.ERROR_JSON, dst)
+
+            if file_info:
+                sly.logger.debug("Error file was uploaded to team files.")
+
+            error_file.set(file_info)
+            error_file.show()
+            error_message.show()
+
+        else:
+            update.card.unlock()
+            update.upload_button.show()
+
         load_button.hide()
         cancel_button.hide()
         refresh_button.show()
-        update.upload_button.show()
+
     else:
         # If comparsion was canceled.
         update.difference_text.hide()
