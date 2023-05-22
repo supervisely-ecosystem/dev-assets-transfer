@@ -112,7 +112,7 @@ def load_data():
     if g.STATE.continue_comparsion:
         sly.logger.debug("Comparsion was finished.")
 
-        if g.STATE.error_report:
+        if g.STATE.error_report and g.STATE.default_settings:
             sly.logger.debug(f"Report contains {len(g.STATE.error_report)} errors.")
 
             with open(g.ERROR_JSON, "w", encoding="utf-8") as f:

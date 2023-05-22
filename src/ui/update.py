@@ -1,7 +1,6 @@
 import json
 import os
 
-from datetime import datetime
 from shutil import rmtree
 from collections import defaultdict, namedtuple
 from typing import List, Tuple, Dict
@@ -277,7 +276,6 @@ def project_difference(
         workspace_name = g.source_api.workspace.get_info_by_id(
             source_project.workspace_id
         ).name
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
         error = None
 
@@ -305,7 +303,6 @@ def project_difference(
 
         if error:
             error_report = {
-                "timestamp": timestamp,
                 "project_name": project_name,
                 "error": error,
             }
@@ -571,12 +568,18 @@ def upload_images():
 
                         # Getting information about annotated images, which are going to be uploaded.
                         annotated_images = get_image_data(
-                            dataset["annotated_images"], dataset_name
+                            workspace_name,
+                            project_name,
+                            dataset["annotated_images"],
+                            dataset_name,
                         )
 
                         # Getting information about tagged images, which are going to be uploaded.
                         tagged_images = get_image_data(
-                            dataset["tagged_images"], dataset_name
+                            workspace_name,
+                            project_name,
+                            dataset["tagged_images"],
+                            dataset_name,
                         )
 
                         if annotated_images is None or tagged_images is None:
@@ -872,7 +875,9 @@ def upload_images_with_annotations(
     return len(uploaded_image_ids)
 
 
-def get_image_data(images: List[sly.ImageInfo], dataset_name: str) -> namedtuple:
+def get_image_data(
+    workspace_name, project_name, images: List[sly.ImageInfo], dataset_name: str
+) -> namedtuple:
     """_summary_
 
     :param images: list of objects with information about images
@@ -890,7 +895,14 @@ def get_image_data(images: List[sly.ImageInfo], dataset_name: str) -> namedtuple
 
     if g.STATE.normalize_image_metadata:
         # Normalizing image metadata if checkbox is checked.
-        image_metas = normalize_image_metadata(image_metas)
+        image_metas = normalize_image_metadata(
+            image_metas,
+            image_ids,
+            image_names,
+            workspace_name,
+            project_name,
+            dataset_name,
+        )
         sly.logger.debug(f"Normalized {len(image_metas)} image metas.")
 
     if len(image_ids) == len(image_names) == len(image_metas):
@@ -922,7 +934,14 @@ def get_image_data(images: List[sly.ImageInfo], dataset_name: str) -> namedtuple
     return images_data
 
 
-def normalize_image_metadata(image_metas: List[Dict]) -> List[Dict]:
+def normalize_image_metadata(
+    image_metas: List[Dict],
+    image_ids,
+    image_names,
+    workspace_name,
+    project_name,
+    dataset_name,
+) -> List[Dict]:
     """Updates the image metadata dict to match the format of the target dataset (Assets).
 
     :param image_metas: list of dicts with image metadata
@@ -934,19 +953,20 @@ def normalize_image_metadata(image_metas: List[Dict]) -> List[Dict]:
     TARGET_METADATA_FIELDS = ["URL", "License", "Author"]
 
     :Possible metadata fields in the source dataset:
-    SOURCE_URL_FIELDS = ["Flickr image URL", "Pexels image URL", "Source URL"]
+    SOURCE_URL_FIELDS = ["Flickr image URL", "Pexels image URL", "Source URL", "URL"]
     SOURCE_AUTHOR_FIELDS = ["Flickr owner id", "Photographer name"]
     SOURCE_LICENSE_FIELDS = ["License", "license", None]
     """
 
     new_image_metas = []
 
-    for image_meta in image_metas:
+    for image_meta, image_id, image_name in zip(image_metas, image_ids, image_names):
         new_image_meta = {}
         new_image_meta["URL"] = (
             image_meta.get("Flickr image URL")
             or image_meta.get("Pexels image URL")
             or image_meta.get("Source URL")
+            or image_meta.get("URL")
         )
         new_image_meta["Author"] = image_meta.get("Flickr owner id") or image_meta.get(
             "Photographer name"
@@ -955,6 +975,18 @@ def normalize_image_metadata(image_metas: List[Dict]) -> List[Dict]:
         new_image_meta["License"] = (
             image_meta.get("License") or image_meta.get("license") or "Pexels license"
         )
+
+        if any(value is None for value in new_image_meta.values()):
+            error = (
+                f"Image missing at least one metadata field. "
+                f"Workspace: {workspace_name}, project: {project_name}, dataset: {dataset_name}, "
+                f"image id: {image_id}, image name: {image_name}."
+            )
+
+            sly.logger.error(error)
+            sly.app.show_dialog(
+                title="Missing metadata field", description=error, status="error"
+            )
 
         new_image_metas.append(new_image_meta)
 
