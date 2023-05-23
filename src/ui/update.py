@@ -968,8 +968,10 @@ def normalize_image_metadata(
             or image_meta.get("Source URL")
             or image_meta.get("URL")
         )
-        new_image_meta["Author"] = image_meta.get("Flickr owner id") or image_meta.get(
-            "Photographer name" or image_meta.get("Author")
+        new_image_meta["Author"] = (
+            image_meta.get("Flickr owner id")
+            or image_meta.get("Photographer name")
+            or image_meta.get("Author")
         )
 
         new_image_meta["License"] = (
