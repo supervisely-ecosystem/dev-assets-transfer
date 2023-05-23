@@ -954,7 +954,7 @@ def normalize_image_metadata(
 
     :Possible metadata fields in the source dataset:
     SOURCE_URL_FIELDS = ["Flickr image URL", "Pexels image URL", "Source URL", "URL"]
-    SOURCE_AUTHOR_FIELDS = ["Flickr owner id", "Photographer name"]
+    SOURCE_AUTHOR_FIELDS = ["Flickr owner id", "Photographer name", "Author"]
     SOURCE_LICENSE_FIELDS = ["License", "license", None]
     """
 
@@ -969,7 +969,7 @@ def normalize_image_metadata(
             or image_meta.get("URL")
         )
         new_image_meta["Author"] = image_meta.get("Flickr owner id") or image_meta.get(
-            "Photographer name"
+            "Photographer name" or image_meta.get("Author")
         )
 
         new_image_meta["License"] = (
