@@ -8,14 +8,10 @@ from dotenv import load_dotenv
 ABSOLUTE_PATH = os.path.dirname(__file__)
 TMP_DIR = os.path.join(ABSOLUTE_PATH, "tmp")
 
-# Directory where temporary downloaded images will be stored.
-IMAGES_DIR = os.path.join(TMP_DIR, "images")
-
 # Path to the .env file, if the app is started from the team files.
 ENV_FILE = os.path.join(ABSOLUTE_PATH, "target.env")
 
 os.makedirs(TMP_DIR, exist_ok=True)
-os.makedirs(IMAGES_DIR, exist_ok=True)
 
 INSTANCES = {
     "Assets": "https://assets.supervise.ly/",
@@ -31,6 +27,7 @@ load_dotenv(os.path.expanduser("~/supervisely.env"))
 source_api: sly.Api = sly.Api.from_env()
 
 TEAM_ID = sly.io.env.team_id()
+WORKSPACE_ID = sly.io.env.workspace_id()
 
 # Default settings for uploading primitives to Assets.
 DEFAULT_TEAM_NAME = "primitives"
