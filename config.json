@@ -1,18 +1,25 @@
 {
-  "name": "Transfer Images between Instances",
-  "type": "app",
-  "version": "2.0.0",
-  "categories": ["images", "data operations", "annotation transformation"],
-  "description": "Transfer and filter images between Supervisely instances",
-  "docker_image": "supervisely/base-py-sdk:6.72.70",
-  "entrypoint": "python -m uvicorn src.main:app --host 0.0.0.0 --port 8000",
-  "port": 8000,
-  "task_location": "workspace_tasks",
-  "icon": "https://user-images.githubusercontent.com/115161827/234882342-726c34c8-5ee8-41d9-89fe-f7227e57effc.png",
-  "headless": false,
-  "icon_cover": true,
-  "context_menu": {
-    "target": ["files_file", "ecosystem"]
-  },
-  "poster": "https://user-images.githubusercontent.com/115161827/234905634-c8b14987-c6d3-49b7-8e16-e91f9077bf69.png"
+    "name": "Transfer Images between Instances",
+    "type": "app",
+    "version": "2.0.0",
+    "categories": [
+        "images",
+        "data operations",
+        "annotation transformation"
+    ],
+    "description": "Transfer and filter images between Supervisely instances",
+    "docker_image": "supervisely/data-operations:0.0.3",
+    "entrypoint": "python -m uvicorn src.main:app --host 0.0.0.0 --port 8000",
+    "port": 8000,
+    "task_location": "workspace_tasks",
+    "icon": "https://user-images.githubusercontent.com/115161827/234882342-726c34c8-5ee8-41d9-89fe-f7227e57effc.png",
+    "headless": false,
+    "icon_cover": true,
+    "context_menu": {
+        "target": [
+            "files_file",
+            "ecosystem"
+        ]
+    },
+    "poster": "https://user-images.githubusercontent.com/115161827/234905634-c8b14987-c6d3-49b7-8e16-e91f9077bf69.png"
 }
