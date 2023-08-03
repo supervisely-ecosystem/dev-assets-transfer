@@ -18,7 +18,7 @@ os.makedirs(TMP_DIR, exist_ok=True)
 os.makedirs(IMAGES_DIR, exist_ok=True)
 
 INSTANCES = {
-    "Assets": "https://assets.supervise.ly/",
+    "Assets": "https://assets.supervisely.com/",
     "App": "https://app.supervise.ly/",
     "Dev": "https://dev.supervise.ly/",
 }
