@@ -80,8 +80,16 @@ def transfer():
     project_path = os.path.join(g.TMP_DIR, project_name)
 
     sly.download_video_project(
-        g.source_api, project_id, project_path, log_progress=True
+        g.source_api,
+        project_id,
+        project_path,
+        log_progress=True,
+        include_custom_data=True,
     )
     sly.upload_video_project(
-        project_path, g.STATE.target_api, target_workspace_info.id, log_progress=True
+        project_path,
+        g.STATE.target_api,
+        target_workspace_info.id,
+        log_progress=True,
+        include_custom_data=True,
     )
