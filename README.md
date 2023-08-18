@@ -1,5 +1,5 @@
 <div align="center" markdown>
-<img src="https://user-images.githubusercontent.com/115161827/234905634-c8b14987-c6d3-49b7-8e16-e91f9077bf69.png" />
+<img src="https://github.com/supervisely-ecosystem/dev-assets-transfer/assets/115161827/4d98acc0-2691-4c49-b947-7610355cf7d8" />
   
 # Transfer Assets between Instances
 
