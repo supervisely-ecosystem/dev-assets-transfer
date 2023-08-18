@@ -21,6 +21,7 @@ INSTANCES = {
     "Assets": "https://assets.supervisely.com/",
     "App": "https://app.supervise.ly/",
     "Dev": "https://dev.supervise.ly/",
+    "Custom": "Custom",
 }
 
 # Indices of the fields in the image metadata to avoid hardcoding.

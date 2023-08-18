@@ -8,7 +8,7 @@ from supervisely.app.widgets import (
     Container,
     Text,
     Select,
-    Flexbox,
+    Field,
 )
 
 import src.globals as g
@@ -21,6 +21,14 @@ instance_select = Select(
     placeholder="Select target instance",
 )
 
+custom_instance_adress_input = Input(placeholder="Enter custom instance address")
+custom_instance_adress_field = Field(
+    title="Enter instance address",
+    description="For example: https://app.supervise.ly/",
+    content=custom_instance_adress_input,
+)
+custom_instance_adress_field.hide()
+
 # Input widget for the API key, characters will be hidden.
 key_input = Input(type="password")
 
@@ -30,7 +38,6 @@ change_instance_button = Button(
     "Change instance", icon="zmdi zmdi-swap-vertical-circle"
 )
 change_instance_button.hide()
-buttons_flexbox = Flexbox([check_key_button, change_instance_button])
 
 # Message which is shown if the API key was loaded from the team files.
 file_loaded_info = Text(
@@ -49,13 +56,16 @@ card = Card(
     content=Container(
         widgets=[
             instance_select,
+            custom_instance_adress_field,
             key_input,
-            buttons_flexbox,
+            check_key_button,
             file_loaded_info,
             check_result,
         ],
         direction="vertical",
     ),
+    content_top_right=change_instance_button,
+    collapsable=True,
 )
 
 
@@ -70,7 +80,11 @@ def connect_to_target():
 
     if not g.STATE.instance:
         # Reading the instance address from the select widget, if it was not loaded from the team files.
-        g.STATE.instance = instance_select.get_value()
+        selected_instance = instance_select.get_value()
+        if selected_instance == "Custom":
+            g.STATE.instance = custom_instance_adress_input.get_value()
+        else:
+            g.STATE.instance = instance_select.get_value()
 
     try:
         g.STATE.target_api = sly.Api(
@@ -104,8 +118,10 @@ def connect_to_target():
     check_result.show()
 
     # Disabling fields for entering API key if the connection was successful.
-    instance_select.disable()
-    key_input.disable()
+    # instance_select.disable()
+    # key_input.disable()
+    card.lock()
+
     check_key_button.hide()
     compare.card.unlock()
 
@@ -113,8 +129,9 @@ def connect_to_target():
 @change_instance_button.click
 def change_instance():
     """Handles the change instance button click event."""
-    instance_select.enable()
-    key_input.enable()
+    card.unlock()
+    # instance_select.enable()
+    # key_input.enable()
     check_key_button.show()
     update.card.lock()
     update.card.lock()
@@ -127,3 +144,12 @@ if g.STATE.target_api_key and g.STATE.instance:
     g.STATE.from_team_files = True
     connect_to_target()
     file_loaded_info.show()
+
+
+@instance_select.value_changed
+def instance_chaned(instance):
+    print(instance)
+    if instance == "Custom":
+        custom_instance_adress_field.show()
+    else:
+        custom_instance_adress_field.hide()
